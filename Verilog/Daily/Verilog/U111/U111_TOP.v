@@ -78,29 +78,23 @@ assign CLKRAMB   = CLK80;
 assign CLKRAMA   = CLK40;
 //assign CLKRAMB   = CLK40;
 
+////////////////
+// BUS OWNER //
+//////////////
 
-SB_PLL40_2F_PAD #(
-    .DIVR (4'b0000),
-    .DIVF (7'b0001111),
-    .DIVQ (3'b011),
-    .FILTER_RANGE (3'b011),
-    .FEEDBACK_PATH ("SIMPLE"),
-    .PLLOUT_SELECT_PORTA ("GENCLK"),
-    .PLLOUT_SELECT_PORTB ("GENCLK_HALF")
-) pll (
-    .LOCK           (),
-    .RESETB         (1'b1),
-    .PACKAGEPIN     (CLK40_PAD),
-    .PLLOUTGLOBALA  (CLK80),
-    .PLLOUTGLOBALB  (CLK40),
-
-    .EXTFEEDBACK       (1'b0),
-    .DYNAMICDELAY      (8'b00000000),
-    .BYPASS            (1'b0),
-    .SDI               (1'b0),
-    .SCLK              (1'b0),
-    .LATCHINPUTVALUE   (1'b0)
-);
+ //Identfiy when the CPU is actively using the bus.
+reg CPU_BUS;
+always @(posedge CLK40) begin
+    if (!RESETn) begin
+        CPU_BUS <= 1;
+    end else begin
+        if (!BGn) begin
+            CPU_BUS <= 1;
+        end else if (BBn) begin
+            CPU_BUS <= 0;
+        end
+    end
+end
 
 //////////////
 // BUFFERS //
@@ -111,7 +105,7 @@ U111_BUFFERS U111_BUFFERS (
     .RnW (RnW),
     .LBENn (LBENn),
     .BBn (BBn),
-    .CPU_CYCLE (CPU_CYCLE),
+    .CPU_BUS (CPU_BUS),
 
     //OUTPUTS
     .CPUBGn (CPUBGn),
@@ -138,6 +132,7 @@ U111_CYCLE_SM U111_CYCLE_SM (
     .TBIn (TBIn),
     .TCIn (TCIn),
     .TEAn (TEAn),
+    .CPU_BUS (CPU_BUS),
     .SIZ (SIZ),
     .A_040 (A_040),
 
@@ -148,7 +143,7 @@ U111_CYCLE_SM U111_CYCLE_SM (
     .TEA_CPUn (TEA_CPUn),
     .A_AMIGA (A_AMIGA),
     .TSn (TSn),
-    .CPU_CYCLE (CPU_CYCLE),
+    //.CPU_BUS (CPU_BUS),
 
     //INOUT
     .D_UU_040 (D_UU_040),
@@ -163,5 +158,31 @@ U111_CYCLE_SM U111_CYCLE_SM (
     //,.TP0 (TP0)
 );
 
+//////////
+// PLL //
+////////
+
+SB_PLL40_2F_PAD #(
+    .DIVR (4'b0000),
+    .DIVF (7'b0001111),
+    .DIVQ (3'b011),
+    .FILTER_RANGE (3'b011),
+    .FEEDBACK_PATH ("SIMPLE"),
+    .PLLOUT_SELECT_PORTA ("GENCLK"),
+    .PLLOUT_SELECT_PORTB ("GENCLK_HALF")
+) pll (
+    .LOCK           (),
+    .RESETB         (1'b1),
+    .PACKAGEPIN     (CLK40_PAD),
+    .PLLOUTGLOBALA  (CLK80),
+    .PLLOUTGLOBALB  (CLK40),
+
+    .EXTFEEDBACK       (1'b0),
+    .DYNAMICDELAY      (8'b00000000),
+    .BYPASS            (1'b0),
+    .SDI               (1'b0),
+    .SCLK              (1'b0),
+    .LATCHINPUTVALUE   (1'b0)
+);
 
 endmodule

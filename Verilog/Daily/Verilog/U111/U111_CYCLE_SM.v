@@ -32,20 +32,19 @@ Date          Who  Description
 13-JUN-2025   JN   Conditions most signals to support PCI DMA cycles.
 13-NOV-2025   JN   Change S5 to drop burst check.
 11-FEB-2026   JN   Fixed assertion of TSn_CPU during DMA cycles.
+14-FEB-2026   JN   Fixed issue where CPU starts a cycle on the same edge _BG is negated by arbiter.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
 
 module U111_CYCLE_SM (
-    input CLK80, CLK40, RESETn, RnW, PORTSIZE, BGn, LBENn, TBIn, TCIn, TEAn,
+    input CLK80, CLK40, RESETn, RnW, PORTSIZE, BGn, LBENn, TBIn, TCIn, TEAn, CPU_BUS,
     input [1:0] SIZ,
     input [1:0] A_040,
 
     output TBI_CPUn, TCI_CPUn, TEA_CPUn,
     output [1:0] A_AMIGA,
     
-    output reg CPU_CYCLE,
-
     inout TSn_CPU, inout TSn,
     inout TAn, inout TACKn,
 
@@ -71,43 +70,41 @@ module U111_CYCLE_SM (
 //TRANSFER START IS PASSED THROUGH DURING PCI DMA CYCLES.
 //DO NOT PASS _TS TO APCI DURING ON-BOARD MEMORY CYCLES (QUALIFIED BY _LBEN).
 
-localparam IDLE     = 2'd0;
-localparam CPU_BUS  = 2'd1;
-localparam DMA_BUS  = 2'd2;
+localparam IDLE = 2'd0;
+localparam CPU_BUS_OWN = 2'd1;
+localparam DMA_BUS_OWN = 2'd2;
 
 reg TSn_EN, TSn_CPU_EN;
 reg TSn_CPU_EDGE, TSn_DMA_EDGE;
 reg [1:0] BUS_STATE;
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        CPU_CYCLE    <= 1'b0;
         TSn_EN       <= 1'b0;
         TSn_CPU_EN   <= 1'b0;
         TSn_CPU_EDGE <= 1'b0;
         TSn_DMA_EDGE <= 1'b0;
         BUS_STATE    <= IDLE;
     end else begin
-        CPU_CYCLE    <= (!BGn || CYCLE_EN);
         TSn_CPU_EDGE <= ~TSn_CPU;
         TSn_DMA_EDGE <= ~TSn;
         case (BUS_STATE)
             IDLE : begin
-                if (CPU_CYCLE) begin
-                    BUS_STATE <= CPU_BUS;
+                if (CPU_BUS) begin
+                    BUS_STATE <= CPU_BUS_OWN;
                 end else begin
-                    BUS_STATE <= DMA_BUS;
+                    BUS_STATE <= DMA_BUS_OWN;
                 end
             end
-            CPU_BUS : begin
-                if (!CPU_CYCLE) begin                    
+            CPU_BUS_OWN : begin
+                if (!CPU_BUS) begin                    
                     BUS_STATE <= IDLE;
                     TSn_EN <= 0;
                 end else begin
                     TSn_EN <= 1;
                 end
             end
-            DMA_BUS : begin
-                if (CPU_CYCLE) begin
+            DMA_BUS_OWN : begin
+                if (CPU_BUS) begin
                     BUS_STATE <= IDLE;
                     TSn_CPU_EN <= 0;
                 end else begin
@@ -124,8 +121,8 @@ always @(negedge CLK40) begin
         TSn_OUT     <= 1;
         TSn_CPU_OUT <= 1;
     end else begin
-        TSn_OUT     <= ~(BUS_STATE == CPU_BUS && (TSn_CPU_EDGE || TS_EN));
-        TSn_CPU_OUT <= ~(BUS_STATE == DMA_BUS && TSn_DMA_EDGE);
+        TSn_OUT     <= ~(BUS_STATE == CPU_BUS_OWN && (TSn_CPU_EDGE || TS_EN));
+        TSn_CPU_OUT <= ~(BUS_STATE == DMA_BUS_OWN && TSn_DMA_EDGE);
     end
 end
 
@@ -158,8 +155,8 @@ assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
 
 //THE BUFFERS ARE ENABLED BASED ON WHO HAS THE BUS AND THE DIRECTION OF THE DATA FLOW.
 
-wire ONBOARD_EN = (READ_CYCLE_ACTIVE || (!CPU_CYCLE && !RnW));
-wire OFFBOARD_EN = (WRITE_CYCLE_ACTIVE || (!CPU_CYCLE && RnW));
+wire ONBOARD_EN = (READ_CYCLE_ACTIVE || (!CPU_BUS && !RnW));
+wire OFFBOARD_EN = (WRITE_CYCLE_ACTIVE || (!CPU_BUS && RnW));
 
 ////////////////////////
 // DATA PASS THROUGH //
@@ -316,103 +313,5 @@ always @(posedge CLK40) begin
         endcase
     end
 end
-
-/*always @(posedge CLK40) begin
-    if (!RESETn) begin
-        TS_EN              <= 0;                      
-        A2_EN              <= 0;        
-        BURST              <= 0;
-        TA_DIS             <= 0; 
-        LW_TRANS           <= 0;
-        //TS_DELAY           <= 1;
-        CYCLE_EN           <= 0;
-        LATCH_EN           <= 0;
-        FLIP_WORD          <= 0;
-        PORT_MISMATCH      <= 0;
-        READ_CYCLE_ACTIVE  <= 0;
-        WRITE_CYCLE_ACTIVE <= 0;
-
-        CYCLE_STATE <= 4'h0;
-        BURST_COUNT <= 2'b0;
-        UU_LATCHED  <= 8'h0;
-        UM_LATCHED  <= 8'h0;
-    end else begin
-
-        //TS_DELAY <= ~(!TSn_CPU && CPU_CYCLE);
-
-        case (CYCLE_STATE)
-
-            4'h0 : begin
-                //if (!TS_DELAY && LBENn) begin
-                if (!TSn_OUT && LBENn) begin
-                    CYCLE_EN <= 1;
-                    LATCH_EN <= 0;
-                    READ_CYCLE_ACTIVE <= RnW;
-                    WRITE_CYCLE_ACTIVE <= !RnW;
-                    LW_TRANS <= SIZ[1] == SIZ[0];
-                    BURST <= (SIZ == 2'b11);
-                    BURST_COUNT <= 2'h0;
-                    CYCLE_STATE <= 4'h1;
-                //end else begin
-                    //READ_CYCLE_ACTIVE <= 0;
-                    //WRITE_CYCLE_ACTIVE <= 0;
-                    //CYCLE_EN <= 0;
-                end
-            end
-            4'h1 : begin
-                PORT_MISMATCH <= (PORTSIZE && LW_TRANS);
-                TA_DIS <= (PORTSIZE && LW_TRANS);
-                FLIP_WORD <= (PORTSIZE && A_040[1]); //Flip the position of the words when at address $2.
-                CYCLE_STATE <= 4'h2;
-            end
-            4'h2 : begin
-                case ({TACKn, TEAn})
-                    TERM_NORMAL : begin
-                        CYCLE_STATE <= PORT_MISMATCH ? 4'h3 : ((!BURST || !TBIn || (BURST_COUNT == 2'h3)) ? 4'h6 : 4'h2);
-                        BURST_COUNT <= BURST_COUNT + 1;
-                        UU_LATCHED <= READ_CYCLE_ACTIVE ? UU_AMIGA_IN : 8'h00;
-                        UM_LATCHED <= READ_CYCLE_ACTIVE ? UM_AMIGA_IN : 8'h00;
-                    end
-                    TERM_RETRY : begin
-                        //When there is a port mismatch condition, _TA-CPU and _TEA-CPU are disabled.
-                        //It will be necessary to terminate the cycle here by creating our own.
-                        CYCLE_STATE <= 4'h6;
-                    end
-                    TERM_ERROR : begin
-                        //When there is a port mismatch condition, _TEA-CPU is disabled.
-                        //It will be necessary to terminate the cycle here by creating our own.
-                        CYCLE_STATE <= 4'h6;
-                    end
-                endcase
-            end
-            4'h3 : begin
-                LATCH_EN <= READ_CYCLE_ACTIVE;
-                A2_EN <= 1;
-                TS_EN <= 1;
-                TA_DIS <= 0;
-                FLIP_WORD <= 1;
-                CYCLE_STATE <= 4'h4;
-            end
-            4'h4 : begin
-                TS_EN <= 0;
-                CYCLE_STATE <= 4'h5;
-            end
-            4'h5 : begin
-                if ({TACKn, TEAn} != TERM_WAIT) begin
-                    //No 16-bit device on the AmigaPCI supports burst cycles.
-                    A2_EN <= 0;
-                    CYCLE_STATE <= 4'h6;
-                end
-            end
-            4'h6 : begin
-                //End the cycle.
-                READ_CYCLE_ACTIVE <= 0;
-                WRITE_CYCLE_ACTIVE <= 0;
-                CYCLE_EN <= 0;
-                CYCLE_STATE <= 4'h0;
-            end
-        endcase
-    end
-end*/
 
 endmodule
