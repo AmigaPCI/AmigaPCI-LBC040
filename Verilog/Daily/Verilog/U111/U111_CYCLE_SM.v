@@ -40,10 +40,10 @@ GitHub: https://github.com/jasonsbeer/AmigaPCI
 module U111_CYCLE_SM (
     input CLK80, CLK40, RESETn, RnW, PORTSIZE, BGn, LBENn, TBIn, TCIn, TEAn, CPU_BUS,
     input [1:0] SIZ,
-    input [1:0] A_040,
+    input A_040,
 
     output TBI_CPUn, TCI_CPUn, TEA_CPUn,
-    output [1:0] A_AMIGA,
+    output A_AMIGA,
     
     inout TSn_CPU, inout TSn,
     inout TAn, inout TACKn,
@@ -67,52 +67,31 @@ module U111_CYCLE_SM (
 // TRANSFER START //
 ///////////////////
 
-//TRANSFER START IS PASSED THROUGH DURING PCI DMA CYCLES.
-//DO NOT PASS _TS TO APCI DURING ON-BOARD MEMORY CYCLES (QUALIFIED BY _LBEN).
+//Transfer start goes two directions. During CPU driven cycles,
+//the CPU asserts _TS-CPU and this is then asserted to _TS one clock
+//later. The opposite is true during PCI DMA driven cycles.
 
-localparam IDLE = 2'd0;
-localparam CPU_BUS_OWN = 2'd1;
-localparam DMA_BUS_OWN = 2'd2;
-
-reg TSn_EN, TSn_CPU_EN;
-reg TSn_CPU_EDGE, TSn_DMA_EDGE;
-reg [1:0] BUS_STATE;
+reg CPU_BUS_OWN;
+reg TSn_CPU_DETECT, TSn_DMA_DETECT;
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        TSn_EN       <= 1'b0;
-        TSn_CPU_EN   <= 1'b0;
-        TSn_CPU_EDGE <= 1'b0;
-        TSn_DMA_EDGE <= 1'b0;
-        BUS_STATE    <= IDLE;
+        TSn_CPU_DETECT <= 1'b0;
+        TSn_DMA_DETECT <= 1'b0;
+        CPU_BUS_OWN    <= 1'b0;
     end else begin
-        TSn_CPU_EDGE <= ~TSn_CPU;
-        TSn_DMA_EDGE <= ~TSn;
-        case (BUS_STATE)
-            IDLE : begin
-                if (CPU_BUS) begin
-                    BUS_STATE <= CPU_BUS_OWN;
-                end else begin
-                    BUS_STATE <= DMA_BUS_OWN;
+        TSn_CPU_DETECT <= ~TSn_CPU;
+        TSn_DMA_DETECT <= ~TSn;
+        if (CPU_BUS_OWN) begin
+            if (!CPU_BUS) begin                    
+                    CPU_BUS_OWN <= 0;
                 end
+        end else begin
+            if (CPU_BUS) begin
+                CPU_BUS_OWN <= 1;
             end
-            CPU_BUS_OWN : begin
-                if (!CPU_BUS) begin                    
-                    BUS_STATE <= IDLE;
-                    TSn_EN <= 0;
-                end else begin
-                    TSn_EN <= 1;
-                end
-            end
-            DMA_BUS_OWN : begin
-                if (CPU_BUS) begin
-                    BUS_STATE <= IDLE;
-                    TSn_CPU_EN <= 0;
-                end else begin
-                    TSn_CPU_EN <= 1;
-                end
-            end
-        endcase
+        end
     end
+    
 end
 
 reg TSn_OUT, TSn_CPU_OUT;
@@ -121,13 +100,13 @@ always @(negedge CLK40) begin
         TSn_OUT     <= 1;
         TSn_CPU_OUT <= 1;
     end else begin
-        TSn_OUT     <= ~(BUS_STATE == CPU_BUS_OWN && (TSn_CPU_EDGE || TS_EN));
-        TSn_CPU_OUT <= ~(BUS_STATE == DMA_BUS_OWN && TSn_DMA_EDGE);
+        TSn_OUT     <= ~( CPU_BUS_OWN && (TSn_CPU_DETECT || TS_EN));
+        TSn_CPU_OUT <= ~(!CPU_BUS_OWN && TSn_DMA_DETECT);
     end
 end
 
-assign TSn = TSn_EN ? TSn_OUT : 1'bz;
-assign TSn_CPU = TSn_CPU_EN ? TSn_CPU_OUT : 1'bz;
+assign TSn = CPU_BUS_OWN ? TSn_OUT : 1'bz;
+assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz;
 
 ////////////////////////
 // CYCLE TERMINATION //
@@ -185,7 +164,8 @@ wire [7:0] UM_AMIGA_IN = D_UM_AMIGA;
 //THE ADDRESS BUS DEFAULTS TO THE CPU ASSERTED ADDRESS. WE CHANGE IT TO $2 WHEN
 //IN THE SECOND CYCLE OF A LONG WORD TO WORD PORT DATA TRANSFER.
 
-assign A_AMIGA = A2_EN ? 2'b10 : A_040;
+//assign A_AMIGA = A2_EN ? 2'b10 : A_040;
+assign A_AMIGA = A2_EN ? 1'b1 : A_040;
 
 ////////////////////////
 // TERMINATION TYPES //
@@ -220,7 +200,6 @@ reg FLIP_WORD;
 reg A2_EN;
 reg BURST;
 reg LW_TRANS;
-reg CYCLE_EN;
 
 reg [3:0] CYCLE_STATE;
 reg [7:0] UU_LATCHED;
@@ -234,7 +213,6 @@ always @(posedge CLK40) begin
         BURST              <= 0;
         TA_DIS             <= 0; 
         LW_TRANS           <= 0;
-        CYCLE_EN           <= 0;
         LATCH_EN           <= 0;
         FLIP_WORD          <= 0;
         PORT_MISMATCH      <= 0;
@@ -247,12 +225,9 @@ always @(posedge CLK40) begin
         UM_LATCHED  <= 8'h0;
     end else begin
 
-        case (CYCLE_STATE)
-
+        case (CYCLE_STATE)            
             4'h0 : begin
                 if (!TSn_OUT && LBENn) begin
-                    CYCLE_EN <= 1;
-                    LATCH_EN <= 0;
                     READ_CYCLE_ACTIVE <= RnW;
                     WRITE_CYCLE_ACTIVE <= !RnW;
                     LW_TRANS <= SIZ[1] == SIZ[0];
@@ -260,15 +235,16 @@ always @(posedge CLK40) begin
                     BURST_COUNT <= 2'h0;
                     CYCLE_STATE <= 4'h1;
                 end else begin
+                    LATCH_EN <= 0;
+                    FLIP_WORD <= 0;
                     READ_CYCLE_ACTIVE <= 0;
                     WRITE_CYCLE_ACTIVE <= 0;
-                    CYCLE_EN <= 0;
                 end
             end
             4'h1 : begin
                 PORT_MISMATCH <= (PORTSIZE && LW_TRANS);
                 TA_DIS <= (PORTSIZE && LW_TRANS);
-                FLIP_WORD <= (PORTSIZE && A_040[1]); //Flip the position of the words when at address $2.
+                FLIP_WORD <= (PORTSIZE && A_040); //Flip the position of the words when at address $2.
                 CYCLE_STATE <= 4'h2;
             end
             4'h2 : begin

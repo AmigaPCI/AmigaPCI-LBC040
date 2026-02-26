@@ -102,10 +102,10 @@ set_io DMAAn  134
 set_io LBENn   48
 
 #ADDRESS
-set_io A_040[0]   37 -pullup yes
-set_io A_040[1]   38 -pullup yes
-set_io A_AMIGA[0] 39 -pullup yes
-set_io A_AMIGA[1] 41 -pullup yes
+#set_io A_040[0]   37 -pullup yes
+set_io A_040   38 -pullup yes
+#set_io A_AMIGA[0] 39 -pullup yes
+set_io A_AMIGA 41 -pullup yes
 
 #TEST
 #set_io TP0 20

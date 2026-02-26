@@ -27,15 +27,16 @@ Description: U111 AMIGA PCI LOCAL BUS CARD BUS SIZING FPGA
 See individual modules for revision history.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
+
 iceprog D:\LocalBus68040\U111\U111_icecube\U111_icecube_Implmnt\sbt\outputs\bitmap\U111_TOP_bitmap.bin
 */
 
 module U111_TOP (
-    input [1:0] A_040,
+    input A_040,
     input [1:0] SIZ,
     input CLK40_IN, RESETn, RnW, BGn, BBn, PORTSIZE, LBENn, TBIn, TCIn, TEAn,
 
-    output [1:0] A_AMIGA,
+    output A_AMIGA,
     output CLK40A, CLK40B, CLK40C, CLK80_CPU, CLKRAMA, CLKRAMB,
     output TBI_CPUn, TCI_CPUn, TEA_CPUn, CPUBGn, BUFENn, BUFDIR, DMAAn,
 
@@ -104,7 +105,6 @@ U111_BUFFERS U111_BUFFERS (
     //INPUTS
     .RnW (RnW),
     .LBENn (LBENn),
-    .BBn (BBn),
     .CPU_BUS (CPU_BUS),
 
     //OUTPUTS
