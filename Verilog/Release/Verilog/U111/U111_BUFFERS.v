@@ -29,35 +29,32 @@ Revision History:
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
-module U111_BUFFERS (
-    input RnW, LBENn, BBn, CPU_CYCLE,
+ module U111_BUFFERS (
+    input RnW, LBENn, CPU_BUS,
     output CPUBGn, BUFENn, BUFDIR, DMAAn
 );
-
-wire DMA_EN = !BBn && !CPU_CYCLE;
 
 ///////////////////////////////////
 // BUFFER ENABLES AND DIRECTION //
 /////////////////////////////////
 
 //ENABLE THE CPU DATA BUS BUFFERS
-assign CPUBGn = !(CPU_CYCLE);
+assign CPUBGn = ~(CPU_BUS);
 
 //THE BUS SIZER TO AMIGA DATA BUS BUFFERS ARE ENABLED FOR ALL CPU DRIVEN CYCLES.
 //THEY SHOULD BE ENABLED FOR PCI DRIVEN DMA CYCLES TO THE ON-BOARD MEMORY SPACE.
 //DISABLED FOR ALL OTHER DMA CYCLES.
 
-assign BUFENn = !(CPU_CYCLE || (DMA_EN && !LBENn));
+assign BUFENn = ~(CPU_BUS || (!CPU_BUS && !LBENn));
 
 //DIRECTION OF THE BUS SIZER TO AMIGAPCI DATA BUS. INFLUENCED BY WHO HAS THE BUS.
 
 //        CPU_RD CPU_WR DMA_RD DMA_WR
-//_BG        0      0      1      1
 //BUFDIR     1      0      0      1
 
-assign BUFDIR = ((CPU_CYCLE && RnW) || (DMA_EN && !RnW));
+assign BUFDIR = ((CPU_BUS && RnW) || (!CPU_BUS && !RnW));
 
 //TURN ON A1 ADDRESS BUFFER DURING PCI DMA
-assign DMAAn = !DMA_EN;
+assign DMAAn = ~(!CPU_BUS);
 
 endmodule

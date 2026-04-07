@@ -26,27 +26,20 @@ Description: DATA TRANSFER CYCLE AND BUS SIZING STATE MACHINE
 
 Date          Who  Description
 -----------------------------------
-19-APR-2025   JN   New bus sizing state machine.
-31-MAY-2025   JN   Fixed burst cycle count value.
-12-JUN-2025   JN   Fixed state machine crash when _LBEN is enabled.
-13-JUN-2025   JN   Conditions most signals to support PCI DMA cycles.
-13-NOV-2025   JN   Change S5 to drop burst check.
+06-APR-2026   JN   Revision 6.0 hardware.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
 
 module U111_CYCLE_SM (
-    input CLK80, CLK40, RESETn, RnW, PORTSIZE, BGn, LBENn, TBIn, TCIn, TEAn,
+    input CLK40, RESETn, TSn_CPU, RnW, PORTSIZE, LBENn, TBIn, TCIn, TEAn, CPU_BUS,
     input [1:0] SIZ,
-    input [1:0] A_040,
+    input A_040,
 
     output TBI_CPUn, TCI_CPUn, TEA_CPUn,
-    output [1:0] A_AMIGA,
-    
-    output CPU_CYCLE,
+    output A_AMIGA, TSn_RAM,
 
-    inout TS_CPUn, inout TSn,
-    inout TAn, inout TACKn,
+    inout TSn, TAn, TACKn,
 
     inout [7:0] D_UU_040, //68040 DATA BUS
     inout [7:0] D_UM_040,
@@ -57,27 +50,62 @@ module U111_CYCLE_SM (
     inout [7:0] D_UM_AMIGA,
     inout [7:0] D_LM_AMIGA,
     inout [7:0] D_LL_AMIGA
+
+    //,output TP0
 );
+
+//assign TP0 = TSn_DMA_EDGE[0];
+
+////////////////////
+// BUS OWNERSHIP //
+//////////////////
+
+//This procedure detects whether the CPU currently owns the bus.
+//This is offset by one clock so we don't cut assertion of _TS short.
+/*reg CPU_BUS_OWN;
+always @(posedge CLK40) begin
+    if (!RESETn) begin
+        CPU_BUS_OWN <= 0;
+    end else begin               
+        CPU_BUS_OWN <= CPU_BUS;
+    end
+end*/
 
 /////////////////////
 // TRANSFER START //
 ///////////////////
 
-//TRANSFER START IS PASSED THROUGH DURING PCI DMA CYCLES.
-//DO NOT PASS _TS TO APCI DURING ON-BOARD MEMORY CYCLES (QUALIFIED BY _LBEN).
+//Transfer start goes two directions. During CPU driven cycles,
+//the CPU asserts _TS-CPU and this is then asserted to _TS one clock
+//later. The opposite is true during PCI DMA driven cycles.
 
-assign CPU_CYCLE = !BGn || CYCLE_EN;
-assign TSn = CPU_CYCLE ? TS_OUT : 1'bz;
-assign TS_CPUn = !CPU_CYCLE ? TSn : 1'bz;
-
-reg TS_OUT;
-always @(negedge CLK40) begin
+//---- Capture assertion of transfer start ----
+reg TSn_CPU_DETECT; //, TSn_DMA_DETECT;
+always @(posedge CLK40) begin
     if (!RESETn) begin
-        TS_OUT <= 1;
+        TSn_CPU_DETECT <= 0;
+        //TSn_DMA_DETECT <= 0;
     end else begin
-        TS_OUT <= !(TS_EN || (!TS_DELAY && LBENn));
+        TSn_CPU_DETECT <= ~TSn_CPU; //this is only an input, so no need to qualify
+        //TSn_DMA_DETECT <= ~TSn && !CPU_BUS; //this is an IO, so need to qualify
     end
 end
+
+//---- Drive assertion of transfer start ----
+reg TSn_OUT; //, TSn_CPU_OUT;
+always @(negedge CLK40) begin
+    if (!RESETn) begin
+        TSn_OUT     <= 1;
+        //TSn_CPU_OUT <= 1;
+    end else begin
+        TSn_OUT     <= ~(TSn_CPU_DETECT || TS_EN);
+        //TSn_CPU_OUT <= ~(!CPU_BUS_OWN && TSn_DMA_DETECT);
+    end
+end
+
+assign TSn     =  CPU_BUS ? TSn_OUT : 1'bz; //Drive the APCI board. This is delayed one clock to ensure edge alignment.
+//assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz;
+assign TSn_RAM =  CPU_BUS ? TSn_CPU : !TSn; //Drive the LBC. if this isn't adequately edge aligned, may need to delay a clock.
 
 ////////////////////////
 // CYCLE TERMINATION //
@@ -90,14 +118,8 @@ end
 assign TAn = !TA_DIS && LBENn ? TACKn : 1'bz;
 assign TACKn = !LBENn ? TAn : 1'bz;
 assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
-
-//assign TBI_CPUn = TBIn;
-//assign TBI_CPUn = !LBENn ? 1'b0 : TBIn;
 assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
-//assign TCI_CPUn = TCIn;
-//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn;
 assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
-//assign TCI_CPUn = 1'b0;
 
 ///////////////////////
 // DATA BUS ENABLES //
@@ -105,8 +127,8 @@ assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
 
 //THE BUFFERS ARE ENABLED BASED ON WHO HAS THE BUS AND THE DIRECTION OF THE DATA FLOW.
 
-wire ONBOARD_EN = (READ_CYCLE_ACTIVE || (!CPU_CYCLE && !RnW));
-wire OFFBOARD_EN = (WRITE_CYCLE_ACTIVE || (!CPU_CYCLE && RnW));
+wire ONBOARD_EN = (READ_CYCLE_ACTIVE || (!CPU_BUS && !RnW));
+wire OFFBOARD_EN = (WRITE_CYCLE_ACTIVE || (!CPU_BUS && RnW));
 
 ////////////////////////
 // DATA PASS THROUGH //
@@ -135,7 +157,7 @@ wire [7:0] UM_AMIGA_IN = D_UM_AMIGA;
 //THE ADDRESS BUS DEFAULTS TO THE CPU ASSERTED ADDRESS. WE CHANGE IT TO $2 WHEN
 //IN THE SECOND CYCLE OF A LONG WORD TO WORD PORT DATA TRANSFER.
 
-assign A_AMIGA = A2_EN ? 2'b10 : A_040;
+assign A_AMIGA = A2_EN ? 1'b1 : A_040;
 
 ////////////////////////
 // TERMINATION TYPES //
@@ -170,8 +192,6 @@ reg FLIP_WORD;
 reg A2_EN;
 reg BURST;
 reg LW_TRANS;
-reg TS_DELAY;
-reg CYCLE_EN;
 
 reg [3:0] CYCLE_STATE;
 reg [7:0] UU_LATCHED;
@@ -180,32 +200,26 @@ reg [1:0] BURST_COUNT;
 
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        TS_EN <= 0;
-        PORT_MISMATCH <= 0;
-        LATCH_EN <= 0;
-        READ_CYCLE_ACTIVE <= 0;
-        WRITE_CYCLE_ACTIVE <= 0;        
-        TA_DIS <= 0;
-        FLIP_WORD <= 0;
-        A2_EN <= 0;
-        LW_TRANS <= 0;
-        BURST <= 0;
+        TS_EN              <= 0;                      
+        A2_EN              <= 0;        
+        BURST              <= 0;
+        TA_DIS             <= 0; 
+        LW_TRANS           <= 0;
+        LATCH_EN           <= 0;
+        FLIP_WORD          <= 0;
+        PORT_MISMATCH      <= 0;
+        READ_CYCLE_ACTIVE  <= 0;
+        WRITE_CYCLE_ACTIVE <= 0;
+
         CYCLE_STATE <= 4'h0;
         BURST_COUNT <= 2'b0;
-        UU_LATCHED <= 8'h0;
-        UM_LATCHED <= 8'h0;
-        TS_DELAY <= 1;
-        CYCLE_EN <= 0;
+        UU_LATCHED  <= 8'h0;
+        UM_LATCHED  <= 8'h0;
     end else begin
 
-        TS_DELAY <= TS_CPUn;
-
-        case (CYCLE_STATE)
-
+        case (CYCLE_STATE)            
             4'h0 : begin
-                if (!TS_DELAY && LBENn) begin
-                    CYCLE_EN <= 1;
-                    LATCH_EN <= 0;
+                if (!TSn_OUT && LBENn) begin
                     READ_CYCLE_ACTIVE <= RnW;
                     WRITE_CYCLE_ACTIVE <= !RnW;
                     LW_TRANS <= SIZ[1] == SIZ[0];
@@ -213,15 +227,16 @@ always @(posedge CLK40) begin
                     BURST_COUNT <= 2'h0;
                     CYCLE_STATE <= 4'h1;
                 end else begin
+                    LATCH_EN <= 0;
+                    FLIP_WORD <= 0;
                     READ_CYCLE_ACTIVE <= 0;
                     WRITE_CYCLE_ACTIVE <= 0;
-                    CYCLE_EN <= 0;
                 end
             end
             4'h1 : begin
                 PORT_MISMATCH <= (PORTSIZE && LW_TRANS);
                 TA_DIS <= (PORTSIZE && LW_TRANS);
-                FLIP_WORD <= (PORTSIZE && A_040[1]); //Flip the position of the words when at address $2.
+                FLIP_WORD <= (PORTSIZE && A_040); //Flip the position of the words when at address $2.
                 CYCLE_STATE <= 4'h2;
             end
             4'h2 : begin
@@ -263,9 +278,7 @@ always @(posedge CLK40) begin
                     CYCLE_STATE <= 4'h0;
                 end
             end
-
         endcase
-
     end
 end
 

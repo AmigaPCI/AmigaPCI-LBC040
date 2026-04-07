@@ -4,7 +4,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Bui
 ProjectName=U111_icecube
 Vendor=SiliconBlue
 Synthesis=synplify
-ProjectVFiles=../U111_BUFFERS.v=work,../U111_TOP.v=work,../U111_CYCLE_SM.v=work
+ProjectVFiles=../U111_BUFFERS.v=work,../U111_TOP.v=work,../U111_CYCLE_SM.v=work,../U111_PCLK.v
 ProjectCFiles=../U111_TOP.sdc
 CurImplementation=U111_icecube_Implmnt
 Implementations=U111_icecube_Implmnt
