@@ -6,10 +6,20 @@
 	(paper "A")
 	(title_block
 		(title "AmigaPCI 68040 Local Bus Card")
-		(date "2025-06-29")
-		(rev "5.0")
+		(date "2026-04-07")
+		(rev "6.0")
 	)
 	(lib_symbols)
+	(text "DESIGNED WITH KICAD 8"
+		(exclude_from_sim no)
+		(at 30.48 196.088 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "af70b97d-987b-4f56-8a98-c80152dfd95d")
+	)
 	(text "AmigaPCI CPU LOCAL BUS CARD\nMC68040 + 128MB FAAAST RAM\n\n\"THE BRAIN\""
 		(exclude_from_sim no)
 		(at 136.398 108.204 0)

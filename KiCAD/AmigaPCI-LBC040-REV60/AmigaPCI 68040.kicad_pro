@@ -616,7 +616,7 @@
         "pattern": "/Card Connector/CDONE"
       },
       {
-        "netclass": "Default",
+        "netclass": "Power",
         "pattern": "+1V2"
       },
       {
@@ -690,6 +690,78 @@
       {
         "netclass": "Narrow",
         "pattern": "A1_OUT"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "_SPIBEN"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "_SPIAEN"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SCLKB"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SDIB"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SDOB"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U109_SCK"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U109_SS"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U409_SCK"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U109_SDO"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U109_SDI"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U409_SS"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U409_SDI"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "U409_SDO"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SDO"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SCLK"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "SDI"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "RAMCLKB"
+      },
+      {
+        "netclass": "Narrow",
+        "pattern": "BCLKB"
       }
     ]
   },
@@ -868,7 +940,7 @@
     },
     "net_format_name": "",
     "page_layout_descr_file": "",
-    "plot_directory": "/home/jason/Documents/GitHub/AmigaPCI/Schematic/",
+    "plot_directory": "/home/jason/Documents/",
     "spice_current_sheet_as_root": false,
     "spice_external_command": "spice \"%I\"",
     "spice_model_current_sheet_as_root": true,
