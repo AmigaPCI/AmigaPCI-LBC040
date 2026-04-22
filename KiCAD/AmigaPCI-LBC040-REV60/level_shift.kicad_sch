@@ -11100,6 +11100,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 68.58 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "22c0d9fc-5b46-4afa-8924-9a414ceff808")
 		)
@@ -11215,6 +11224,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 116.84 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 116.84 214.63 0)
 			(effects
 				(font
@@ -11346,6 +11364,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 345.44 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "8dee206a-c4ad-4895-a3a4-aab0eec2de07")
 		)
@@ -11406,6 +11433,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 168.91 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 168.91 119.38 0)
 			(effects
 				(font
@@ -11528,6 +11564,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 168.91 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 168.91 81.28 0)
 			(effects
 				(font
@@ -11659,6 +11704,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 137.16 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "79cfdf60-224a-43cd-8ded-01e22bd8d99e")
 		)
@@ -11773,6 +11827,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 283.21 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 283.21 43.18 0)
 			(effects
 				(font
@@ -11904,6 +11967,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 345.44 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "3aeb620f-260c-41cb-8432-b0c7547e36b2")
 		)
@@ -11965,6 +12037,15 @@
 			)
 		)
 		(property "Description" ""
+			(at 86.36 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 86.36 213.36 0)
 			(effects
 				(font
@@ -12107,6 +12188,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 283.21 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "09e98741-3276-421f-a7f0-623e49af867c")
 		)
@@ -12222,6 +12312,15 @@
 			)
 		)
 		(property "Description" ""
+			(at 187.96 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 187.96 213.36 0)
 			(effects
 				(font
@@ -12431,6 +12530,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 259.08 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "ebaf339e-da0b-4469-8c5b-e9f0806d509f")
 		)
@@ -12561,6 +12669,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C151022"
+			(at 373.38 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "9e19ca3b-af8f-4d60-b1e9-8c9a6e927317")
 		)
@@ -12639,6 +12756,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 147.32 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d4696254-5f34-469b-9a69-3e03bc41bd98")
 		)
@@ -12700,6 +12826,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 218.44 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 218.44 214.63 0)
 			(effects
 				(font
@@ -12964,6 +13099,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 208.28 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "332b1d26-52d5-4e2f-9d3b-5b6c4fbc89a5")
 		)
@@ -13033,6 +13177,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 228.6 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "887b52a5-d599-4e22-b664-46762af85fc0")
 		)
@@ -13094,6 +13247,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 96.52 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 96.52 214.63 0)
 			(effects
 				(font
@@ -13225,6 +13387,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 45.72 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "4561d614-14a8-4031-aed7-f089ea6c1a4c")
 		)
@@ -13286,6 +13457,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 177.8 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 177.8 214.63 0)
 			(effects
 				(font
@@ -13424,6 +13604,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C151022"
+			(at 373.38 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "d6a99aeb-6a8a-47ce-91a9-86eec451f123")
 		)
@@ -13502,6 +13691,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 269.24 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5dc31903-bee2-4c6f-b758-201f56a0d983")
 		)
@@ -13562,6 +13760,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 68.58 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 68.58 81.28 0)
 			(effects
 				(font
@@ -13693,6 +13900,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 35.56 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "79cfdf60-224a-43cd-8ded-01e22bd8d997")
 		)
@@ -13815,6 +14031,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 283.21 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "7ad73277-1a80-4962-be17-63b4667af97a")
 		)
@@ -13929,6 +14154,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 68.58 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 68.58 119.38 0)
 			(effects
 				(font
@@ -14060,6 +14294,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 106.68 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "6e6def75-b2c2-4aa7-ac8e-73ddce7bf912")
 		)
@@ -14120,6 +14363,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 168.91 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 168.91 157.48 0)
 			(effects
 				(font
@@ -14251,6 +14503,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 55.88 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "79cfdf60-224a-43cd-8ded-01e22bd8d99a")
 		)
@@ -14374,6 +14635,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 167.64 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "e575de31-5579-46a1-be14-e14af0ae5bde")
 		)
@@ -14443,6 +14713,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 66.04 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "670d1084-0b1e-4791-ab37-db89c0738be2")
 		)
@@ -14504,6 +14783,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 76.2 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 76.2 214.63 0)
 			(effects
 				(font
@@ -14702,6 +14990,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 157.48 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "17"
 			(uuid "79cfdf60-224a-43cd-8ded-01e22bd8d9a1")
 		)
@@ -14825,6 +15122,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 248.92 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "fdcedb57-b743-4f8c-91ea-d33c16288776")
 		)
@@ -14886,6 +15192,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 198.12 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 198.12 214.63 0)
 			(effects
 				(font
@@ -15016,6 +15331,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7848"
+			(at 168.91 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "5"
 			(uuid "5133bf95-e26c-4920-880b-a2bcb6d929af")
 		)
@@ -15130,6 +15454,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 68.58 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 68.58 157.48 0)
 			(effects
 				(font
@@ -15261,6 +15594,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 127 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "a35aa8a7-dc4f-4ee9-950d-a077b258e4cb")
 		)
@@ -15322,6 +15664,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 238.76 214.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 238.76 214.63 0)
 			(effects
 				(font
@@ -15444,6 +15795,15 @@
 			)
 		)
 		(property "Description" "Octal BUS Transceivers, 3-State outputs"
+			(at 283.21 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7848"
 			(at 283.21 119.38 0)
 			(effects
 				(font
