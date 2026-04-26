@@ -771,7 +771,7 @@
       "idf": "",
       "netlist": "",
       "plot": "/home/jason/Documents/Gerbers/",
-      "pos_files": "/home/jason/Documents/Gerbers/LBC/",
+      "pos_files": "/home/jason/Downloads/",
       "specctra_dsn": "",
       "step": "",
       "svg": "",
@@ -971,7 +971,7 @@
     ],
     [
       "e434a9c9-dc49-4b97-aed3-c8d4620b07ee",
-      "Card Connector"
+      "Local Bus Port and Sizing"
     ],
     [
       "0cc1516b-fda9-43ef-9f2b-aa36a87bb630",

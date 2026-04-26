@@ -71,7 +71,7 @@
 		)
 	)
 	(sheet
-		(at 56.8 54)
+		(at 89.312 54.508)
 		(size 18.7 12.1)
 		(fields_autoplaced yes)
 		(stroke
@@ -83,7 +83,7 @@
 		)
 		(uuid "0cc1516b-fda9-43ef-9f2b-aa36a87bb630")
 		(property "Sheetname" "Level Shifting"
-			(at 56.8 53.2884 0)
+			(at 89.312 53.7964 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -92,7 +92,7 @@
 			)
 		)
 		(property "Sheetfile" "level_shift.kicad_sch"
-			(at 56.8 66.6846 0)
+			(at 89.312 67.1926 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -109,7 +109,7 @@
 		)
 	)
 	(sheet
-		(at 56.65 32.23)
+		(at 89.67 33.246)
 		(size 18.85 13.27)
 		(fields_autoplaced yes)
 		(stroke
@@ -121,7 +121,7 @@
 		)
 		(uuid "bb4ae098-973b-46ca-b387-f2229a81b6e3")
 		(property "Sheetname" "Fast Memory"
-			(at 56.65 31.5184 0)
+			(at 89.67 32.5344 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -130,7 +130,7 @@
 			)
 		)
 		(property "Sheetfile" "FastMem.kicad_sch"
-			(at 56.65 46.0846 0)
+			(at 89.67 47.1006 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -158,7 +158,7 @@
 			(color 0 0 0 0.0000)
 		)
 		(uuid "e434a9c9-dc49-4b97-aed3-c8d4620b07ee")
-		(property "Sheetname" "Card Connector"
+		(property "Sheetname" "Local Bus Port and Sizing"
 			(at 33.4 53.1084 0)
 			(effects
 				(font

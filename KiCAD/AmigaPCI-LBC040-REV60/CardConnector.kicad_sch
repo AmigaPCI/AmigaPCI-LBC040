@@ -8135,177 +8135,6 @@
 				)
 			)
 		)
-		(symbol "Oscillator:XO32"
-			(pin_names
-				(offset 0.254)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "X"
-				(at -5.08 6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "XO32"
-				(at 1.27 -6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" "Oscillator:Oscillator_SMD_EuroQuartz_XO32-4Pin_3.2x2.5mm"
-				(at 17.78 -8.89 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "http://cdn-reichelt.de/documents/datenblatt/B400/XO32.pdf"
-				(at -2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "HCMOS Clock Oscillator"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "Crystal Clock Oscillator"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Oscillator*SMD*EuroQuartz*XO32*3.2x2.5mm*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "XO32_0_1"
-				(rectangle
-					(start -5.08 5.08)
-					(end 5.08 -5.08)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -0.762) (xy -1.016 -0.762) (xy -1.016 0.762) (xy -0.508 0.762) (xy -0.508 -0.762) (xy 0 -0.762)
-						(xy 0 0.762) (xy 0.508 0.762) (xy 0.508 -0.762) (xy 0.762 -0.762)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "XO32_1_1"
-				(pin input line
-					(at -7.62 0 0)
-					(length 2.54)
-					(name "EN"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 0 -7.62 90)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 7.62 0 180)
-					(length 2.54)
-					(name "OUT"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 0 7.62 270)
-					(length 2.54)
-					(name "V+"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
 		(symbol "power:+1V2"
 			(power)
 			(pin_numbers hide)
@@ -9100,12 +8929,6 @@
 		(uuid "8cfb5733-af9b-4d24-96f6-d2e7e7e94c9a")
 	)
 	(junction
-		(at 358.14 168.91)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "9833d0b1-7a75-486a-bb1c-e1c6ed15d1fc")
-	)
-	(junction
 		(at 207.01 222.25)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -9134,12 +8957,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a59791c8-e6e9-4508-821e-7dee7987cd86")
-	)
-	(junction
-		(at 346.71 148.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "a5ba11cb-0fd2-4e25-9e6e-f2b69a4a639c")
 	)
 	(junction
 		(at 267.97 26.67)
@@ -9236,12 +9053,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d283d8e8-c1c9-4cac-bd2a-11e8f6de80fe")
-	)
-	(junction
-		(at 358.14 148.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d4fca4af-875b-4b8a-8c23-6a62998a7296")
 	)
 	(junction
 		(at 273.05 62.23)
@@ -11024,16 +10835,6 @@
 	)
 	(wire
 		(pts
-			(xy 341.63 160.02) (xy 341.63 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0b5c0b44-8659-4221-834b-a60985940bc9")
-	)
-	(wire
-		(pts
 			(xy 264.16 115.57) (xy 273.05 115.57)
 		)
 		(stroke
@@ -11391,16 +11192,6 @@
 			(type default)
 		)
 		(uuid "176c63f1-26b4-49b8-ad25-ca19cb544dfa")
-	)
-	(wire
-		(pts
-			(xy 375.92 157.48) (xy 379.73 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "177d1d52-0986-442e-a8cc-f79384deaac2")
 	)
 	(wire
 		(pts
@@ -11924,16 +11715,6 @@
 	)
 	(wire
 		(pts
-			(xy 346.71 148.59) (xy 358.14 148.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2e04d506-c20a-494a-9df9-c0d200756c00")
-	)
-	(wire
-		(pts
 			(xy 72.39 111.76) (xy 72.39 93.98)
 		)
 		(stroke
@@ -12121,16 +11902,6 @@
 			(type default)
 		)
 		(uuid "3674bced-c95e-45a1-8bb1-180586f337f0")
-	)
-	(wire
-		(pts
-			(xy 346.71 157.48) (xy 346.71 148.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "36801187-31df-49fd-879e-5b07cd98cbe6")
 	)
 	(wire
 		(pts
@@ -12881,16 +12652,6 @@
 			(type default)
 		)
 		(uuid "55bfd8d2-998f-402f-a218-c4b033ec4534")
-	)
-	(wire
-		(pts
-			(xy 358.14 165.1) (xy 358.14 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5630dfab-0bb1-47c7-9f06-6c14d0a5f383")
 	)
 	(wire
 		(pts
@@ -13874,16 +13635,6 @@
 	)
 	(wire
 		(pts
-			(xy 341.63 148.59) (xy 341.63 154.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7c01ee62-4037-4b28-8539-31dbfbccd7e6")
-	)
-	(wire
-		(pts
 			(xy 341.63 72.39) (xy 351.79 72.39)
 		)
 		(stroke
@@ -14411,16 +14162,6 @@
 			(type default)
 		)
 		(uuid "8b56726a-875f-4733-a41f-e395715a6854")
-	)
-	(wire
-		(pts
-			(xy 365.76 157.48) (xy 368.3 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8ba1a8be-b64f-4525-9e18-8077b3aadb6d")
 	)
 	(wire
 		(pts
@@ -15144,16 +14885,6 @@
 	)
 	(wire
 		(pts
-			(xy 341.63 148.59) (xy 346.71 148.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a15b33ab-56ae-49cf-a268-c9429c5f5063")
-	)
-	(wire
-		(pts
 			(xy 264.16 176.53) (xy 273.05 176.53)
 		)
 		(stroke
@@ -15831,16 +15562,6 @@
 			(type default)
 		)
 		(uuid "b7ff71c3-bb78-499b-a3ee-c68d74766804")
-	)
-	(wire
-		(pts
-			(xy 358.14 148.59) (xy 358.14 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b8023fb6-1937-4669-b5ae-6f8794c466da")
 	)
 	(wire
 		(pts
@@ -16614,16 +16335,6 @@
 	)
 	(wire
 		(pts
-			(xy 350.52 157.48) (xy 346.71 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d61b76dd-b966-4b57-bcaf-dba6f19d37fc")
-	)
-	(wire
-		(pts
 			(xy 267.97 44.45) (xy 267.97 46.99)
 		)
 		(stroke
@@ -16741,16 +16452,6 @@
 			(type default)
 		)
 		(uuid "dc668582-5481-4a98-a1e3-2e5cd6c0ab02")
-	)
-	(wire
-		(pts
-			(xy 341.63 168.91) (xy 358.14 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dcd358e0-8cda-48c6-a215-87001c872015")
 	)
 	(wire
 		(pts
@@ -17785,18 +17486,6 @@
 		(uuid 04fec7fe-2991-4da1-acff-bc04fffee628)
 	)
 	(rectangle
-		(start 327.86 138.16)
-		(end 397.36 179.07)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(fill
-			(type none)
-		)
-		(uuid bab8c8ac-e560-431e-97b4-e480428c0457)
-	)
-	(rectangle
 		(start 22.86 15.748)
 		(end 146.304 255.27)
 		(stroke
@@ -17821,20 +17510,7 @@
 		)
 		(uuid "009a36a0-11b0-4e15-ab99-089f13691c49")
 	)
-	(text "CLOCK\nSTUFF"
-		(exclude_from_sim no)
-		(at 375.666 150.876 0)
-		(effects
-			(font
-				(size 3 3)
-				(thickness 0.6)
-				(bold yes)
-			)
-			(justify left bottom)
-		)
-		(uuid "368ca781-a2f4-4d07-b1ef-5880d330511f")
-	)
-	(text "LOCAL BUS PORT, \nBUS SIZING, CLOCKS"
+	(text "LOCAL BUS PORT, \nBUS SIZING"
 		(exclude_from_sim no)
 		(at 312.166 250.444 0)
 		(effects
@@ -22065,27 +21741,6 @@
 			)
 		)
 	)
-	(global_label "CLKCPU"
-		(shape output)
-		(at 379.73 157.48 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "ec642c46-3fbc-48e1-a335-bc1c21420fca")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 390.1538 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
 	(global_label "RAMCLKB"
 		(shape output)
 		(at 193.04 128.27 180)
@@ -24400,72 +24055,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3V3")
-		(at 358.14 148.59 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "6a83c951-5afc-45fc-8b1c-064de6e0945a")
-		(property "Reference" "#PWR017"
-			(at 358.14 152.4 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+3V3"
-			(at 358.14 144.145 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 358.14 148.59 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 358.14 148.59 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 358.14 148.59 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e221a91c-49df-4595-856d-67180dc8c9d5")
-		)
-		(instances
-			(project "AmigaPCI 68040"
-				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
-					(reference "#PWR017")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "AmigaPCI-Symbols:CP_Small-Device")
 		(at 332.74 193.04 0)
 		(mirror y)
@@ -25264,7 +24853,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C3654550"
 			(at 86.36 143.51 0)
 			(effects
 				(font
@@ -25859,72 +25448,6 @@
 			(project "AmigaPCI 68040"
 				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
 					(reference "#PWR010")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 358.14 168.91 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9a50a51d-eee3-4ffb-b1bf-4cff1ef82be0")
-		(property "Reference" "#PWR018"
-			(at 358.14 175.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 358.14 174.117 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 358.14 168.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 358.14 168.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 358.14 168.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "6110b951-9385-4430-b063-a6ded1135224")
-		)
-		(instances
-			(project "AmigaPCI 68040"
-				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
-					(reference "#PWR018")
 					(unit 1)
 				)
 			)
@@ -26534,83 +26057,6 @@
 			(project "AmigaPCI 68040"
 				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
 					(reference "#PWR063")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 372.11 157.48 270)
-		(mirror x)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b747a245-e2c9-4f97-b2c5-0edbd59a9929")
-		(property "Reference" "R112"
-			(at 372.11 159.385 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "22R"
-			(at 372.11 157.48 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 372.11 159.258 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 372.11 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 372.11 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C23345"
-			(at 372.11 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "7d12c387-6228-4cc8-9385-f2ebb77f13bb")
-		)
-		(pin "2"
-			(uuid "6da9af04-0df4-4783-ab63-fce5dec3dc8f")
-		)
-		(instances
-			(project "AmigaPCI 68040"
-				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
-					(reference "R112")
 					(unit 1)
 				)
 			)
@@ -27353,167 +26799,6 @@
 			(project "AmigaPCI 68040"
 				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
 					(reference "C129")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C_Small")
-		(at 341.63 157.48 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "eace2de0-d079-41e8-a91e-6a33ef5c4620")
-		(property "Reference" "C137"
-			(at 340.36 163.449 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "0.1uF"
-			(at 340.36 156.718 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
-			(at 341.63 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 341.63 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 341.63 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C14663"
-			(at 341.63 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b0fe8718-cb44-4e6a-a02c-5c98bc7eec87")
-		)
-		(pin "2"
-			(uuid "5ad647c8-1774-4630-ac6f-51d9679eab08")
-		)
-		(instances
-			(project "AmigaPCI 68040"
-				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
-					(reference "C137")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Oscillator:XO32")
-		(at 358.14 157.48 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ee2905de-0e39-4181-8e52-09b151faa599")
-		(property "Reference" "X100"
-			(at 366.649 151.384 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "80MHz"
-			(at 366.649 153.924 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Oscillator:Oscillator_SMD_ECS_2520MV-xxx-xx-4Pin_2.5x2.0mm"
-			(at 375.92 166.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "http://cdn-reichelt.de/documents/datenblatt/B400/XO32.pdf"
-			(at 355.6 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 358.14 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C557215"
-			(at 358.14 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "4388db0f-dc3c-407c-bdf4-1198ba6eafe3")
-		)
-		(pin "3"
-			(uuid "3274d61a-bfd4-42c0-af5a-8a1e3d95f348")
-		)
-		(pin "4"
-			(uuid "ee5528b9-59a4-4a0b-9783-5e55ff09b863")
-		)
-		(pin "1"
-			(uuid "9f87a0e2-24b2-4bef-a70c-ed556f65f1c9")
-		)
-		(instances
-			(project "AmigaPCI 68040"
-				(path "/e4eb271a-56d6-4281-ada6-40852f202c68/e434a9c9-dc49-4b97-aed3-c8d4620b07ee"
-					(reference "X100")
 					(unit 1)
 				)
 			)
