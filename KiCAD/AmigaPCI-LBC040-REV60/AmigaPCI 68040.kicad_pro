@@ -781,7 +781,7 @@
   },
   "schematic": {
     "annotate_start_num": 0,
-    "bom_export_filename": "/home/jason/Documents/Gerbers/LBC/AmigaPCI 68040.csv",
+    "bom_export_filename": "/home/jason/Documents/AmigaPCI 68040 LCSC.csv",
     "bom_fmt_presets": [],
     "bom_fmt_settings": {
       "field_delimiter": ",",
@@ -908,7 +908,7 @@
           "group_by": false,
           "label": "LCSC",
           "name": "LCSC",
-          "show": false
+          "show": true
         }
       ],
       "filter_string": "",
