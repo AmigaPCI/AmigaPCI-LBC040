@@ -74,10 +74,12 @@ assign CLK40A    = CLK40;
 assign CLK40B    = CLK40;
 assign CLK40C    = CLK40;
 assign CLK80_CPU = CLK80;
-//assign CLKRAMA   = CLK80;
-assign CLKRAMB   = CLK80;
-assign CLKRAMA   = CLK40;
+
+//assign CLKRAMA   = CLK40;
+assign CLKRAMA   = CLK80;
+
 //assign CLKRAMB   = CLK40;
+assign CLKRAMB   = CLK80;
 
 ////////////////
 // BUS OWNER //

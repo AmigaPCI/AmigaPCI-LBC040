@@ -120,13 +120,12 @@ assign TAn = !TA_DIS && LBENn ? TACKn : 1'bz;
 assign TACKn = !LBENn ? TAn : 1'bz;
 assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
 
-//assign TBI_CPUn = TBIn;
-//assign TBI_CPUn = !LBENn ? 1'b0 : TBIn;
-assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
-//assign TCI_CPUn = TCIn;
-//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn;
-assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
-//assign TCI_CPUn = 1'b0;
+assign TBI_CPUn = !LBENn ? 1'b0 : TBIn; //No RAM burst.
+//assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
+
+assign TCI_CPUn = !LBENn ? 1'b0 : TCIn; //No RAM cache.
+//assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+
 
 ///////////////////////
 // DATA BUS ENABLES //
