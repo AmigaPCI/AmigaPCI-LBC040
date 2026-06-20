@@ -55,6 +55,7 @@ assign BUFENn = ~(CPU_BUS || (!CPU_BUS && !LBENn));
 assign BUFDIR = ((CPU_BUS && RnW) || (!CPU_BUS && !RnW));
 
 //TURN ON A1 ADDRESS BUFFER DURING PCI DMA
+//Is this really necessary? PCI will never initiate a 16 bit cycle.
 assign DMAAn = ~(!CPU_BUS);
 
 endmodule

@@ -1,6 +1,6 @@
 #CLOCKS
-set_io PCLK_IN   129
-set_io PCLK_OUT   94
+set_io CLK80_IN   129
+set_io CLK80_OUT   94
 set_io CLKRAMA    56
 set_io CLKRAMB    61
 set_io CLK40A     93
@@ -87,7 +87,7 @@ set_io SIZ[0]    121
 set_io RnW        97
 set_io TCIn       44
 set_io TCI_CPUn  101
-set_io TEAn       43
+#set_io TEAn       43
 set_io TEA_CPUn  122
 set_io TBIn       48
 set_io TBI_CPUn   64
@@ -110,3 +110,4 @@ set_io A_AMIGA 41 -pullup yes
 
 #TEST
 #set_io TP0 20
+set_io CACHE_EN 67 -pullup yes

@@ -34,10 +34,10 @@ iceprog D:\LocalBus68040\U111\U111_icecube\U111_icecube_Implmnt\sbt\outputs\bitm
 module U111_TOP (
     input A_040,
     input [1:0] SIZ,
-    input PCLK_IN, RESETn, RnW, BGn, BBn, PORTSIZE, LBENn, TBIn, TCIn, TEAn, TSn_CPU,
+    input CLK80_IN, RESETn, RnW, BGn, BBn, PORTSIZE, LBENn, TBIn, TCIn, TSn_CPU,
 
     output A_AMIGA,
-    output CLK40A, CLK40B, CLK40C, PCLK_OUT, CLKRAMA, CLKRAMB,
+    output CLK40A, CLK40B, CLK40C, CLK80_OUT, CLKRAMA, CLKRAMB,
     output TBI_CPUn, TCI_CPUn, TEA_CPUn, CPUBGn, BUFENn, BUFDIR, DMAAn, TSn_RAM,
 
     inout TSn,
@@ -55,22 +55,26 @@ module U111_TOP (
     inout [7:0] D_LL_AMIGA
 
     //,output TP0
+    ,input CACHE_EN
 );
 
 ///////////////////////////////
 // BUS AND PROCESSOR CLOCKS //
 /////////////////////////////
 
-//WE GENERATE THE 40MHz AND 80MHz CLOCKS HERE
-//wire CLK80;
+//Clock distribution.
 wire CLK40;
 
-wire   PCLK_PAD  = PCLK_IN;
+wire   PCLK_PAD  = CLK80_IN;
 assign CLK40A    = CLK40;
 assign CLK40B    = CLK40;
 assign CLK40C    = CLK40;
-assign CLKRAMA   = CLK40;
-assign CLKRAMB   = CLK40;
+
+//assign CLKRAMA   = CLK40;
+assign CLKRAMA   = CLK80_OUT; //80MHz
+
+//assign CLKRAMB   = CLK40;
+assign CLKRAMB   = CLK80_OUT; //80MHz
 
 ////////////////
 // BUS OWNER //
@@ -118,25 +122,25 @@ U111_CYCLE_SM U111_CYCLE_SM (
     .TSn_CPU (TSn_CPU),
     .RnW (RnW),
     .PORTSIZE (PORTSIZE),
+    .TACKn (TACKn),
+    .BGn (BGn),
     .LBENn (LBENn),
     .TBIn (TBIn),
     .TCIn (TCIn),
-    .TEAn (TEAn),
     .CPU_BUS (CPU_BUS),
     .SIZ (SIZ),
     .A_040 (A_040),
 
-    //OUTPUTS    
+    //OUTPUTS
+    .TAn (TAn),
     .TBI_CPUn (TBI_CPUn),
     .TCI_CPUn (TCI_CPUn),
     .TEA_CPUn (TEA_CPUn),
     .A_AMIGA (A_AMIGA),
+    .TSn (TSn),
     .TSn_RAM (TSn_RAM),
 
     //INOUT
-    .TSn (TSn),
-    .TAn (TAn),
-    .TACKn (TACKn),    
     .D_UU_040 (D_UU_040),
     .D_UM_040 (D_UM_040),
     .D_LM_040 (D_LM_040),
@@ -147,6 +151,7 @@ U111_CYCLE_SM U111_CYCLE_SM (
     .D_LL_AMIGA (D_LL_AMIGA)
 
     //,.TP0 (TP0)
+    ,.CACHE_EN (CACHE_EN)
 );
 
 //////////
@@ -157,7 +162,7 @@ U111_CYCLE_SM U111_CYCLE_SM (
 U111_PCLK U111_PCLK     (.PACKAGEPIN(PCLK_PAD),
                          .PLLOUTCOREA(),
                          .PLLOUTCOREB(),
-                         .PLLOUTGLOBALA(PCLK_OUT),
+                         .PLLOUTGLOBALA(CLK80_OUT),
                          .PLLOUTGLOBALB(CLK40),
                          .RESET(1'b1));
 

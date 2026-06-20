@@ -26,20 +26,22 @@ Description: DATA TRANSFER CYCLE AND BUS SIZING STATE MACHINE
 
 Date          Who  Description
 -----------------------------------
-06-APR-2026   JN   Revision 6.0 hardware.
+20-JUN-2026   JN   Rev 6.x hardware release.   
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
 
 module U111_CYCLE_SM (
-    input CLK40, RESETn, TSn_CPU, RnW, PORTSIZE, LBENn, TBIn, TCIn, TEAn, CPU_BUS,
+    input CLK40, RESETn, RnW, PORTSIZE, BGn, LBENn, TBIn, TCIn, CPU_BUS, TSn_CPU,
     input [1:0] SIZ,
     input A_040,
 
-    output TBI_CPUn, TCI_CPUn, TEA_CPUn,
-    output A_AMIGA, TSn_RAM,
-
-    inout TSn, TAn, TACKn,
+    output TSn_RAM, TBI_CPUn, TCI_CPUn, TEA_CPUn,
+    output A_AMIGA,
+    
+    inout TSn,
+    inout TAn,
+    inout TACKn,
 
     inout [7:0] D_UU_040, //68040 DATA BUS
     inout [7:0] D_UM_040,
@@ -52,24 +54,11 @@ module U111_CYCLE_SM (
     inout [7:0] D_LL_AMIGA
 
     //,output TP0
+    ,input CACHE_EN
 );
 
 //assign TP0 = TSn_DMA_EDGE[0];
-
-////////////////////
-// BUS OWNERSHIP //
-//////////////////
-
-//This procedure detects whether the CPU currently owns the bus.
-//This is offset by one clock so we don't cut assertion of _TS short.
-/*reg CPU_BUS_OWN;
-always @(posedge CLK40) begin
-    if (!RESETn) begin
-        CPU_BUS_OWN <= 0;
-    end else begin               
-        CPU_BUS_OWN <= CPU_BUS;
-    end
-end*/
+//assign TP0 = (OFFBOARD_EN || ONBOARD_EN);
 
 /////////////////////
 // TRANSFER START //
@@ -79,47 +68,57 @@ end*/
 //the CPU asserts _TS-CPU and this is then asserted to _TS one clock
 //later. The opposite is true during PCI DMA driven cycles.
 
-//---- Capture assertion of transfer start ----
-reg TSn_CPU_DETECT; //, TSn_DMA_DETECT;
+reg CPU_BUS_OWN;
+reg TSn_CPU_DETECT;
+//reg TSn_DMA_DETECT;
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        TSn_CPU_DETECT <= 0;
-        //TSn_DMA_DETECT <= 0;
+        TSn_CPU_DETECT <= 1'b0;
+        //TSn_DMA_DETECT <= 1'b0;
+        CPU_BUS_OWN    <= 1'b0;
     end else begin
-        TSn_CPU_DETECT <= ~TSn_CPU; //this is only an input, so no need to qualify
-        //TSn_DMA_DETECT <= ~TSn && !CPU_BUS; //this is an IO, so need to qualify
+        CPU_BUS_OWN    <= CPU_BUS; //Delay one clock.
+        TSn_CPU_DETECT <= ~TSn_CPU;
+        //TSn_DMA_DETECT <= ~TSn;
     end
+    
 end
 
-//---- Drive assertion of transfer start ----
-reg TSn_OUT; //, TSn_CPU_OUT;
+reg TSn_OUT;
+//reg TSn_CPU_OUT;
 always @(negedge CLK40) begin
     if (!RESETn) begin
-        TSn_OUT     <= 1;
-        //TSn_CPU_OUT <= 1;
+        TSn_OUT     <= 1'b1;
+        //TSn_CPU_OUT <= 1'b1;
     end else begin
-        TSn_OUT     <= ~(TSn_CPU_DETECT || TS_EN);
+        TSn_OUT     <= ~( CPU_BUS_OWN && (TSn_CPU_DETECT || TS_EN));
         //TSn_CPU_OUT <= ~(!CPU_BUS_OWN && TSn_DMA_DETECT);
     end
 end
 
-assign TSn     =  CPU_BUS ? TSn_OUT : 1'bz; //Drive the APCI board. This is delayed one clock to ensure edge alignment.
-//assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz;
-assign TSn_RAM =  CPU_BUS ? TSn_CPU : !TSn; //Drive the LBC. if this isn't adequately edge aligned, may need to delay a clock.
+assign TSn = CPU_BUS_OWN ? TSn_OUT : 1'bz;
+//assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz; //May need to put this back for snooping.
+assign TSn_RAM =  CPU_BUS ? TSn_CPU : !TSn; //Drive the LBC RAM cycle. If this isn't adequately edge aligned, may need to delay a clock.
 
 ////////////////////////
 // CYCLE TERMINATION //
 //////////////////////
 
-//_TACK (_TA) AND _TEA COMPRISE THE CYCLE TERMINATION SIGNALS.
 //WE PASS THE _TACK SIGNAL TO _TA FOR OFF-BOARD CYCLES.
 //WE PASS THE _TA SIGNAL TO _TACK FOR ON-BOARD CYCLES.
 
 assign TAn = !TA_DIS && LBENn ? TACKn : 1'bz;
 assign TACKn = !LBENn ? TAn : 1'bz;
-assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
-assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
-assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+//assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
+assign TEA_CPUn = 1'b1;
+
+assign TBI_CPUn = !LBENn ? 1'b0 : TBIn; //No RAM burst.
+//assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
+
+//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn; //No RAM cache.
+assign TCI_CPUn = !CACHE_EN ? (!LBENn ? 1'b1 : TCIn) : 1'b0; //Use the jumper to control assertion of _TCI.
+//assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+
 
 ///////////////////////
 // DATA BUS ENABLES //
@@ -129,6 +128,10 @@ assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
 
 wire ONBOARD_EN = (READ_CYCLE_ACTIVE || (!CPU_BUS && !RnW));
 wire OFFBOARD_EN = (WRITE_CYCLE_ACTIVE || (!CPU_BUS && RnW));
+//wire ONBOARD_EN = READ_CYCLE_ACTIVE;
+//wire OFFBOARD_EN = WRITE_CYCLE_ACTIVE;
+//wire ONBOARD_EN = LBENn && RnW && CPU_BUS;
+//wire OFFBOARD_EN = LBENn && !RnW && CPU_BUS;
 
 ////////////////////////
 // DATA PASS THROUGH //
@@ -154,20 +157,10 @@ wire [7:0] UM_AMIGA_IN = D_UM_AMIGA;
 // BUS SIZING ADDRESS //
 ///////////////////////
 
-//THE ADDRESS BUS DEFAULTS TO THE CPU ASSERTED ADDRESS. WE CHANGE IT TO $2 WHEN
+//THE ADDRESS BUS DEFAULTS TO THE CPU ASSERTED ADDRESS. WE CHANGE IT TO 0x2 WHEN
 //IN THE SECOND CYCLE OF A LONG WORD TO WORD PORT DATA TRANSFER.
 
 assign A_AMIGA = A2_EN ? 1'b1 : A_040;
-
-////////////////////////
-// TERMINATION TYPES //
-//////////////////////
-
-//wire TERMINATION = {TACKn, TEAn};
-localparam [1:0] TERM_NORMAL = 2'b01;
-localparam [1:0] TERM_RETRY  = 2'b00;
-localparam [1:0] TERM_ERROR  = 2'b10;
-localparam [1:0] TERM_WAIT   = 2'b11;
 
 ////////////////////////////////////////
 // DATA TRANSFER CYCLE STATE MACHINE //
@@ -175,12 +168,18 @@ localparam [1:0] TERM_WAIT   = 2'b11;
 
 //DURING LONG WORD TRANSFERS TO WORD PORTS, WE NEED TO TAKE
 //OVER THE CYCLE FROM THE CPU. WE CREATE TWO LOCAL CYCLES FROM ONE CPU
-//CYCLE. THE FIRST CYCLE TRANSFERS THE HIGH WORD (ADDRESS 0). THE SECOND CYCLE
-//TRANSFERS THE LOWER WORD (ADDRESS 2). CYCLES AGAINST LIKE PORTS AT ADDRESS 0
+//CYCLE. THE FIRST CYCLE TRANSFERS THE HIGH WORD (ADDRESS 0x0). THE SECOND CYCLE
+//TRANSFERS THE LOWER WORD (ADDRESS 0x2). CYCLES AGAINST LIKE PORTS AT ADDRESS 0
 //ARE SIMPLY PASSED THROUGH. CYCLES AGAINST LIKE PORTS AT ADDRESS 2 ARE "FLIPPED"
 //SO THE WORD APPEARS ON THE CORRECT BYTE LANES.
 
 //WE DO NOT RUN THIS STATE MACHINE FOR ON-BOARD CYCLES (QUALIFIED BY _LBEN).
+
+localparam [3:0] IDLE        = 4'h0;
+localparam [3:0] CYCLE1_STRT = 4'h1;
+localparam [3:0] CYCLE1_TERM = 4'h2;
+localparam [3:0] CYCLE2_STRT = 4'h3;
+localparam [3:0] CYCLE2_TERM = 4'h4;
 
 reg TS_EN;
 reg TA_DIS;
@@ -200,82 +199,79 @@ reg [1:0] BURST_COUNT;
 
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        TS_EN              <= 0;                      
-        A2_EN              <= 0;        
-        BURST              <= 0;
-        TA_DIS             <= 0; 
-        LW_TRANS           <= 0;
-        LATCH_EN           <= 0;
-        FLIP_WORD          <= 0;
-        PORT_MISMATCH      <= 0;
-        READ_CYCLE_ACTIVE  <= 0;
-        WRITE_CYCLE_ACTIVE <= 0;
+        TS_EN              <= 1'b0;                      
+        A2_EN              <= 1'b0;        
+        BURST              <= 1'b0;
+        TA_DIS             <= 1'b0; 
+        LW_TRANS           <= 1'b0;
+        LATCH_EN           <= 1'b0;
+        FLIP_WORD          <= 1'b0;
+        PORT_MISMATCH      <= 1'b0;
+        READ_CYCLE_ACTIVE  <= 1'b0;
+        WRITE_CYCLE_ACTIVE <= 1'b0;
 
-        CYCLE_STATE <= 4'h0;
+        CYCLE_STATE <= IDLE;
         BURST_COUNT <= 2'b0;
         UU_LATCHED  <= 8'h0;
         UM_LATCHED  <= 8'h0;
     end else begin
 
         case (CYCLE_STATE)            
-            4'h0 : begin
+            IDLE : begin
+                A2_EN     <= 1'b0;
+                LATCH_EN  <= 1'b0;
+                FLIP_WORD <= 1'b0;
                 if (!TSn_OUT && LBENn) begin
                     READ_CYCLE_ACTIVE <= RnW;
                     WRITE_CYCLE_ACTIVE <= !RnW;
-                    LW_TRANS <= SIZ[1] == SIZ[0];
+                    LW_TRANS <= (SIZ[1] == SIZ[0]);
                     BURST <= (SIZ == 2'b11);
-                    BURST_COUNT <= 2'h0;
-                    CYCLE_STATE <= 4'h1;
+                    CYCLE_STATE <= CYCLE1_STRT;
                 end else begin
-                    LATCH_EN <= 0;
-                    FLIP_WORD <= 0;
-                    READ_CYCLE_ACTIVE <= 0;
-                    WRITE_CYCLE_ACTIVE <= 0;
+                    READ_CYCLE_ACTIVE  <= 1'b0;
+                    WRITE_CYCLE_ACTIVE <= 1'b0;
                 end
             end
-            4'h1 : begin
-                PORT_MISMATCH <= (PORTSIZE && LW_TRANS);
-                TA_DIS <= (PORTSIZE && LW_TRANS);
-                FLIP_WORD <= (PORTSIZE && A_040); //Flip the position of the words when at address $2.
-                CYCLE_STATE <= 4'h2;
+            CYCLE1_STRT : begin
+                if (PORTSIZE) begin
+                    PORT_MISMATCH <= LW_TRANS;
+                    TA_DIS        <= LW_TRANS;
+                    FLIP_WORD     <= A_040; //Flip the position of the words when at address 0x2.
+                end else begin
+                    PORT_MISMATCH <= 1'b0;
+                    TA_DIS        <= 1'b0;
+                    FLIP_WORD     <= 1'b0;
+                end
+                CYCLE_STATE <= CYCLE1_TERM;
             end
-            4'h2 : begin
-                case ({TACKn, TEAn})
-                    TERM_NORMAL : begin
-                        CYCLE_STATE <= PORT_MISMATCH ? 4'h3 : ((!BURST || !TBIn || (BURST_COUNT == 2'h3)) ? 4'h0 : 4'h2);
-                        BURST_COUNT <= BURST_COUNT + 1;
-                        UU_LATCHED <= READ_CYCLE_ACTIVE ? UU_AMIGA_IN : 8'h00;
-                        UM_LATCHED <= READ_CYCLE_ACTIVE ? UM_AMIGA_IN : 8'h00;
+            CYCLE1_TERM : begin
+                if (!TACKn) begin
+                    if (PORT_MISMATCH) begin
+                        UU_LATCHED  <= UU_AMIGA_IN;
+                        UM_LATCHED  <= UM_AMIGA_IN;
+                        CYCLE_STATE <= CYCLE2_STRT;
+                    end else begin
+                        if (!BURST || !TBIn || (BURST_COUNT == 2'h3)) begin
+                            BURST_COUNT <= 2'h0;
+                            CYCLE_STATE <= IDLE;
+                        end else begin
+                            BURST_COUNT <= BURST_COUNT + 1;
+                        end
                     end
-                    TERM_RETRY : begin
-                        //When there is a port mismatch condition, _TA-CPU and _TEA-CPU are disabled.
-                        //It will be necessary to terminate the cycle here by creating our own.
-                        CYCLE_STATE <= 4'h0;
-                    end
-                    TERM_ERROR : begin
-                        //When there is a port mismatch condition, _TEA-CPU is disabled.
-                        //It will be necessary to terminate the cycle here by creating our own.
-                        CYCLE_STATE <= 4'h0;
-                    end
-                endcase
+                end
             end
-            4'h3 : begin
+            CYCLE2_STRT : begin
                 LATCH_EN <= READ_CYCLE_ACTIVE;
-                A2_EN <= 1;
-                TS_EN <= 1;
-                TA_DIS <= 0;
-                FLIP_WORD <= 1;
-                CYCLE_STATE <= 4'h4;
+                A2_EN <= 1'b1;
+                TS_EN <= 1'b1;
+                TA_DIS <= 1'b0;
+                FLIP_WORD <= 1'b1;
+                CYCLE_STATE <= CYCLE2_TERM;
             end
-            4'h4 : begin
-                TS_EN <= 0;
-                CYCLE_STATE <= 4'h5;
-            end
-            4'h5 : begin
-                if ({TACKn, TEAn} != TERM_WAIT) begin
-                    //No 16-bit device on the AmigaPCI supports burst cycles.
-                    A2_EN <= 0;
-                    CYCLE_STATE <= 4'h0;
+            CYCLE2_TERM : begin
+                TS_EN <= 1'b0;
+                if (!TACKn) begin
+                    CYCLE_STATE <= IDLE;
                 end
             end
         endcase
