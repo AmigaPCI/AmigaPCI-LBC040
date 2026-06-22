@@ -25,7 +25,7 @@ Target Devices: iCE40-HX1K-VQ100
 Description: ADDRESS DECODE FOR MOTHERBOARD MEMORY SPACE.
 
 Revision History:
-    19-FEB-2025 : INITIAL RELEASE
+    22-JUN-2026 : Initial Rev 6.x Release
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
@@ -33,21 +33,23 @@ GitHub: https://github.com/jasonsbeer/AmigaPCI
 module U400_ADDRESS_DECODE (
 
     input RESETn,
-    input [4:0] A, //A[31:27]
+    input [31:27] A,
+    //input [31:21] A,
     output RAM_SPACE
 
 );
 
+//MOTHERBOARD FAST RAM IS HARD CODED AT ADDRESS RANGE $0400 0000 TO $07FF FFFF (64MB).
 //COPROCESSOR SLOT RAM EXPANSION IS HARD CODED AT ADDRESS RANGE $0800 0000 - $0FFF FFFF (128MB).
 //THIS IS NOT PART OF THE AUTOCONFIG SPACE.
 
-assign RAM_SPACE = RESETn && RAM_SPACE_DETECT;
+//assign RAM_SPACE = RESETn && A == 6'b000001; //Motherboard RAM.
 
-reg RAM_SPACE_DETECT;
-always @* begin
-    RAM_SPACE_DETECT <= A == 5'b00001;
-end
-
-//assign RAM_SPACE = RESETn && A == 5'b00001; //Coprocessor slot RAM.
-
+assign RAM_SPACE = RESETn && A[31:27] == 5'b0000_1; //Coprocessor slot RAM. 128MB
+//assign RAM_SPACE = RESETn && A[31:26] == 6'b0000_10; //64MB
+//assign RAM_SPACE = RESETn && A[31:25] == 7'b0000_100; //32MB
+//assign RAM_SPACE = RESETn && A[31:24] == 8'b0000_1000; //16MB
+//assign RAM_SPACE = RESETn && A[31:23] == 9'b0000_1000_0; //8MB
+//assign RAM_SPACE = RESETn && A[31:22] == 10'b0000_1000_00; //4MB
+//assign RAM_SPACE = RESETn && A[31:21] == 11'b0000_1000_000; //2MB
 endmodule

@@ -1,5 +1,5 @@
 #CLOCKS
-#set_io RAMCLK 90 #Use if RAM is not clocked with the bus clock.
+set_io CLK80  90 #Use if RAM is not clocked with the bus clock.
 set_io CLK40  63 #BUSCLOCK
 
 #DATA TRANSFER SIGNALS
@@ -76,3 +76,5 @@ set_io A[29] 26
 set_io A[30] 41
 set_io A[31] 42
 
+#Test Point
+set_io TP 2

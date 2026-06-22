@@ -2,10 +2,9 @@
 #-- Project file D:\LocalBus68040\U400\LBC_U400\LBC_U400_syn.prj
 #project files
 
-add_file -verilog -lib work "../U400_BYTE_ENABLE.v" 
-add_file -verilog -lib work "../U400_SDRAM.v" 
 add_file -verilog -lib work "../U400_TOP.v" 
 add_file -verilog -lib work "../U400_ADDRESS_DECODE.v" 
+add_file -verilog -lib work "../U400_SDRAM_CONTROLLER.v" 
 add_file -constraint -lib work "../U400_TOP.sdc"
 #implementation: "LBC_U400_Implmnt"
 impl -add LBC_U400_Implmnt -type fpga

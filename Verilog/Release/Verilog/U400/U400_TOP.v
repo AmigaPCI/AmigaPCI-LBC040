@@ -32,7 +32,7 @@ iceprog D:\LocalBus68040\U400\LBC_U400\LBC_U400_Implmnt\sbt\outputs\bitmap\U400_
 
 module U400_TOP (
 
-    input CLK40, RESETn,
+    input CLK80, CLK40, RESETn,
     input TSn, RnW,
     input [31:0] A,
     input [1:0] SIZ,
@@ -43,21 +43,28 @@ module U400_TOP (
     output LBENn, BANK0, BANK1,
     output [12:0] MA
 
+    ,output TP
+
 );
+
+//assign TP = UUBEn;
 
 ///////////////////////////////
 // RAM SPACE ADDRESS DECODE //
 /////////////////////////////
 
 wire RAM_SPACE;
+//wire SDRAM_CONFIGURED;
+//wire BYTE_EN;
 
-//DISABLE THE DATA BUFFERS WHEN ACCESSING THE ONBOARD RAM.
-assign LBENn = !RAM_SPACE;
+//Disable the bus sizing state machine when accessing onboard RAM.
+assign LBENn = ~RAM_SPACE;
 
 U400_ADDRESS_DECODE U400_ADDRESS_DECODE (
     //INPUTS
     .RESETn (RESETn),
     .A (A[31:27]),
+    //.A (A[31:21]),
     
     //OUTPUTS
     .RAM_SPACE (RAM_SPACE)
@@ -67,15 +74,16 @@ U400_ADDRESS_DECODE U400_ADDRESS_DECODE (
 // SDRAM STATE MACHINE //
 ////////////////////////
 
-U400_SDRAM U400_SDRAM (
+U400_SDRAM_CONTROLLER U400_SDRAM_CONTROLLER (
 
     //INPUTS
+    .CLK80 (CLK80),
     .CLK40 (CLK40),
     .RESETn (RESETn),
     .TSn (TSn),
     .RAM_SPACE (RAM_SPACE),
     .RnW (RnW),
-    .A (A[26:2]),
+    .A (A[26:0]),
     .SIZ (SIZ),
 
     //OUTPUTS
@@ -87,26 +95,15 @@ U400_SDRAM U400_SDRAM (
     .CASn (CASn),
     .WEn (WEn),
     .MA (MA),
+    .BANK1 (BANK1),
     .BANK0 (BANK0),
-    .BANK1 (BANK1)
-    
-);
-
-///////////////////
-// BYTE ENABLES //
-/////////////////
-
-U400_BYTE_ENABLE U400_BYTE_ENABLE (
-    //INPUTS
-    .RAM_SPACE (RAM_SPACE),
-    .A (A[1:0]),
-    .SIZ (SIZ),
-
-    //OUTPUTS
     .UUBEn (UUBEn),
     .UMBEn (UMBEn),
     .LMBEn (LMBEn),
     .LLBEn (LLBEn)
+
+    ,.TP (TP)
+    
 );
 
 endmodule
