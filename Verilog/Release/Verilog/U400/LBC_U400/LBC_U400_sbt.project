@@ -1,31 +1,18 @@
-[Project]
-ProjectVersion=2.0
-Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Build Date: Dec 9 2020 18:31:09
-ProjectName=U111_icecube
-Vendor=SiliconBlue
-Synthesis=synplify
-ProjectVFiles=../U111_BUFFERS.v=work,../U111_TOP.v=work,../U111_CYCLE_SM.v=work,../U111_PCLK.v=work
-ProjectCFiles=../U111_TOP.sdc
-CurImplementation=U111_icecube_Implmnt
-Implementations=U111_icecube_Implmnt
-StartFromSynthesis=yes
-IPGeneration=false
-
-[U111_icecube_Implmnt]
+[LBC_U400_Implmnt]
 DeviceFamily=iCE40
-Device=HX4K
-DevicePackage=TQ144
+Device=HX1K
+DevicePackage=VQ100
 DevicePower=
-NetlistFile=U111_icecube_Implmnt/U111_icecube.edf
+NetlistFile=LBC_U400_Implmnt/LBC_U400.edf
 AdditionalEDIFFile=
 IPEDIFFile=
-DesignLib=U111_icecube_Implmnt/sbt/netlist/oadb-U111_TOP
+DesignLib=LBC_U400_Implmnt/sbt/netlist/oadb-U400_TOP
 DesignView=_rt
-DesignCell=U111_TOP
-SynthesisSDCFile=U111_icecube_Implmnt/U111_icecube.scf
+DesignCell=U400_TOP
+SynthesisSDCFile=LBC_U400_Implmnt/LBC_U400.scf
 UserPinConstraintFile=
 UserSDCFile=
-PhysicalConstraintFile=../U111_TOP.pcf
+PhysicalConstraintFile=../U400_TOP.pcf
 BackendImplPathName=
 Devicevoltage=1.14
 DevicevoltagePerformance=+/-5%(datasheet default)
@@ -38,6 +25,19 @@ BestCustomTemperature=0
 IOBankVoltages=topBank,3.3 bottomBank,3.3 leftBank,3.3 rightBank,3.3
 derValue=0.701346
 TimingPathNumberStick=0
+
+[Project]
+ProjectVersion=2.0
+Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Build Date: Dec 9 2020 18:31:09
+ProjectName=LBC_U400
+Vendor=SiliconBlue
+Synthesis=synplify
+ProjectVFiles=../U400_TOP.v=work,../U400_ADDRESS_DECODE.v=work,../U400_SDRAM_CONTROLLER.v
+ProjectCFiles=../U400_TOP.sdc
+CurImplementation=LBC_U400_Implmnt
+Implementations=LBC_U400_Implmnt
+StartFromSynthesis=yes
+IPGeneration=false
 
 [lse options]
 CarryChain=True
