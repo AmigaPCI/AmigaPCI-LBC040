@@ -98,7 +98,7 @@ end
 
 assign TSn = CPU_BUS_OWN ? TSn_OUT : 1'bz;
 //assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz; //May need to put this back for snooping.
-assign TSn_RAM =  CPU_BUS ? TSn_CPU : !TSn; //Drive the LBC RAM cycle. If this isn't adequately edge aligned, may need to delay a clock.
+assign TSn_RAM =  CPU_BUS ? TSn_CPU : TSn; //Drive the LBC RAM cycle. If this isn't adequately edge aligned, may need to delay a clock.
 
 ////////////////////////
 // CYCLE TERMINATION //
