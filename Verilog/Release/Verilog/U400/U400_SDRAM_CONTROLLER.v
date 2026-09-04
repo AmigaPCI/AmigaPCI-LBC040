@@ -280,6 +280,15 @@ reg [11:0] REFRESH_COUNT;
 reg [13:0] POWERUP_COUNT;
 reg        SDRAM_CONFIGURED;
 reg        CONFIG_REFRESH_DONE;
+
+//Set once the SDRAM has been configured and never cleared by RESETn. A reset
+//with WARM set is a warm reset: the SDRAM clock has been running all along and
+//the devices only need their rows closed and the mode register reloaded. The
+//flop starts at zero when the FPGA is configured, which is the cold start.
+reg        WARM = 1'b0;
+always @(posedge CLK80) begin
+    if (SDRAM_CONFIGURED) WARM <= 1'b1;
+end
 reg        REQ;            //A cycle request is waiting (refresh in progress or _MI asserted).
 reg        REQ_FRESH;      //The request was captured on the last odd edge.
 reg        ABORT;          //The cycle was started while _MI was asserted after all; back out.
@@ -367,9 +376,12 @@ always @(posedge CLK80) begin
         case (SDRAM_STATE)
 
             //--- Power up: wait for a stable clock before the first command. ---
+            //A warm reset may have interrupted a cycle with a row open, and no
+            //refresh happens while we wait. Give that row tRAS and go straight to
+            //the precharge; only a cold start gets the 100us of stable clock.
             POWER_UP : begin
                 POWERUP_COUNT <= POWERUP_COUNT + 1;
-                if (POWERUP_COUNT == POWERUP_CLOCKS) begin
+                if (POWERUP_COUNT == (WARM ? 14'd8 : POWERUP_CLOCKS)) begin
                     SDRAM_STATE <= CONFIG_PRECH;
                 end
             end

@@ -119,6 +119,10 @@ always @(posedge RAMCLK) begin
     if (mi_guard && TP && TA_DUT === 1'b0) err("U400 asserts _TA while _MI asserted");
 end
 
+// Time of the last PRECHARGE ALL seen by the SDRAM (for the warm reset test).
+real last_precharge_all = -1;
+always @(posedge RAMCLK) if (CS0n_d === 1'b0 && {RASn_d, CASn_d, WEn_d} == 3'b010 && MA_d[10]) last_precharge_all = $realtime;
+
 // ---------------------------------------------------------------- 68040 bus master model
 // Address helpers for the SDRAM backdoor: A[26] chip, A[25:24] bank, A[23:11] row, A[10:2] column.
 function [31:0] ram_peek(input [31:0] a);
@@ -477,6 +481,27 @@ initial begin
         end
         if (ram_peek(32'h0800_7010) !== 32'h7010_7010) err("memory changed by a snooped write");
     end
+
+    // ---- warm reset in the middle of a line write ----
+    // The row that was open must be closed promptly (tRAS max is 100us and no
+    // refresh runs while a bank is active) and RAM must be usable again quickly.
+    ram_poke(32'h0800_8000, 32'h8000_8000);
+    start_cycle(32'h0800_8010, 2'b11, 0, 32'h8010_0000);
+    @(posedge BCLK); @(posedge BCLK);
+    RESETn = 0; TS_CPU = 1; DQ_OUT = 32'hz;
+    repeat (8) @(posedge BCLK);
+    RESETn = 1;
+    d = $realtime;
+    #1000;
+    if (last_precharge_all < d || last_precharge_all - d > 400.0) begin
+        $display("   reset released at %0t, last PRECHARGE ALL at %0t", d, last_precharge_all);
+        err("warm reset: row not precharged promptly");
+    end
+    cpu_read(32'h0800_8000, 2'b00, 32'h8000_8000, 4'hf);
+    $display("warm reset: first read served %0d clocks after _TS", ta_clocks + 1);
+    if (ta_clocks > 60) err("warm reset: RAM not usable quickly");
+    cpu_line_write(32'h0800_8010, 32'h8010_0000, 32'h8010_0001, 32'h8010_0002, 32'h8010_0003);
+    cpu_line_read(32'h0800_8010);
 
     // ---- random traffic long enough to hit several refresh cycles (7.5us each) ----
     for (k = 0; k < 4096; k = k + 1) shadow[k] = 32'h0;
