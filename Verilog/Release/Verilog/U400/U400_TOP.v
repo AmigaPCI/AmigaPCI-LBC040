@@ -27,35 +27,32 @@ Description: SDRAM CONTROLLER LOGIC
 See individual modules for revision history.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
+
 iceprog D:\LocalBus68040\U400\LBC_U400\LBC_U400_Implmnt\sbt\outputs\bitmap\U400_TOP_bitmap.bin
 */
 
-module U400_TOP (
-
+module U400_TOP #(
+    parameter FAST_READ = 1 //See U400_SDRAM_CONTROLLER.
+)(
     input CLK80, CLK40, RESETn,
-    input TSn, RnW,
+    input TSn, RnW, MIn,
     input [31:0] A,
     input [1:0] SIZ,
 
-    output TAn,
+    inout TAn,
+
     output UUBEn, UMBEn, LMBEn, LLBEn,
     output CS0n, CS1n, CLK_EN, RASn, CASn, WEn,
     output LBENn, BANK0, BANK1,
     output [12:0] MA
-
     ,output TP
-
 );
-
-//assign TP = UUBEn;
 
 ///////////////////////////////
 // RAM SPACE ADDRESS DECODE //
 /////////////////////////////
 
 wire RAM_SPACE;
-//wire SDRAM_CONFIGURED;
-//wire BYTE_EN;
 
 //Disable the bus sizing state machine when accessing onboard RAM.
 assign LBENn = ~RAM_SPACE;
@@ -64,8 +61,7 @@ U400_ADDRESS_DECODE U400_ADDRESS_DECODE (
     //INPUTS
     .RESETn (RESETn),
     .A (A[31:27]),
-    //.A (A[31:21]),
-    
+
     //OUTPUTS
     .RAM_SPACE (RAM_SPACE)
 );
@@ -74,8 +70,7 @@ U400_ADDRESS_DECODE U400_ADDRESS_DECODE (
 // SDRAM STATE MACHINE //
 ////////////////////////
 
-U400_SDRAM_CONTROLLER U400_SDRAM_CONTROLLER (
-
+U400_SDRAM_CONTROLLER #(.FAST_READ(FAST_READ)) U400_SDRAM_CONTROLLER (
     //INPUTS
     .CLK80 (CLK80),
     .CLK40 (CLK40),
@@ -83,11 +78,14 @@ U400_SDRAM_CONTROLLER U400_SDRAM_CONTROLLER (
     .TSn (TSn),
     .RAM_SPACE (RAM_SPACE),
     .RnW (RnW),
+    .MIn (MIn),
     .A (A[26:0]),
     .SIZ (SIZ),
 
-    //OUTPUTS
+    //INOUT
     .TAn (TAn),
+
+    //OUTPUTS
     .CS0n (CS0n),
     .CS1n (CS1n),
     .CLK_EN (CLK_EN),
@@ -100,10 +98,8 @@ U400_SDRAM_CONTROLLER U400_SDRAM_CONTROLLER (
     .UUBEn (UUBEn),
     .UMBEn (UMBEn),
     .LMBEn (LMBEn),
-    .LLBEn (LLBEn)
-
-    ,.TP (TP)
-    
+    .LLBEn (LLBEn),
+    .TP (TP)
 );
 
 endmodule
