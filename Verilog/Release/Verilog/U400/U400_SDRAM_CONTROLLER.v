@@ -219,8 +219,11 @@ localparam [2:0] WRITE        = 3'b100;
 localparam [2:0] AUTOREFRESH  = 3'b001;
 localparam [2:0] MODEREGISTER = 3'b000;
 
-//Refresh every 600 CLK80 clocks = 7.5us. 8192 rows must be refreshed every 64ms (7.8us per row).
-localparam [11:0] REFRESH_DEFAULT = 12'h258;
+//8192 rows must be refreshed every 64ms, one AUTO REFRESH every 7.8125us. The
+//counter is cleared when the command is issued and a refresh is due 560 clocks
+//(7.0us) later. The state machine adds a few clocks and a cycle in progress can
+//add up to 25 more, so the longest gap is about 7.5us.
+localparam [11:0] REFRESH_DEFAULT = 12'd560;
 
 //Power up delay before the first SDRAM command. JEDEC asks for 100us of stable clock.
 localparam [13:0] POWERUP_CLOCKS = 14'd12000; //150us at 80MHz
@@ -344,7 +347,7 @@ always @(posedge CLK80) begin
         CS_EN     <= 1'b0;
         CS_EN_ALL <= 1'b0;
         CMD_OUT   <= NOP;
-        REFRESH_COUNT <= REFRESH_COUNT + 1;
+        if (REFRESH_COUNT != 12'hFFF) REFRESH_COUNT <= REFRESH_COUNT + 1; //Saturate; a late refresh stays due.
         CNT <= CNT + 1;
 
         //--- Bus events. Looked at on odd edges only, so the CLK40 registered inputs are stable. ---
@@ -420,16 +423,16 @@ always @(posedge CLK80) begin
 
             //--- Auto refresh. Also used twice during configuration. ---
             REFRESH_STRT : begin
-                CS_EN_ALL   <= 1'b1;
-                CMD_OUT     <= AUTOREFRESH;
-                WAIT_CNT    <= 4'd6; //tRFC = 75ns before the next command.
-                SDRAM_STATE <= REFRESH_WAIT;
+                CS_EN_ALL     <= 1'b1;
+                CMD_OUT       <= AUTOREFRESH;
+                REFRESH_COUNT <= 12'b0;
+                WAIT_CNT      <= 4'd6; //The next command is sampled 8 clocks (100ns) after this one; tRFC is 63ns.
+                SDRAM_STATE   <= REFRESH_WAIT;
             end
             REFRESH_WAIT : begin
                 if (WAIT_CNT != 0) begin
                     WAIT_CNT <= WAIT_CNT - 1;
                 end else begin
-                    REFRESH_COUNT <= 12'b0;
                     if (SDRAM_CONFIGURED) begin
                         SDRAM_STATE <= SDRAM_IDLE;
                     end else if (CONFIG_REFRESH_DONE) begin
