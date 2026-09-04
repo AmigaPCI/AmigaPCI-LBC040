@@ -22,6 +22,7 @@ parameter real CPU_TDATA  = 27.0;  // BCLK to data out valid (max 27 at 40MHz)
 parameter real CPU_THOLD  = 6.5;   // output hold (min 6.5)
 parameter real CPU_TSU    = 3.0;   // data-in setup required (MC68040 40MHz spec 15)
 parameter real CPU_TH     = 3.0;   // data-in hold required (spec 16)
+parameter real CPU_TA_HOLD= 2.0;   // _TA hold required after BCLK (spec 23)
 parameter real U111_DELAY = 6.0;   // _TS pass through delay in U111
 parameter real FPGA_TCO   = 5.0;   // U400 clock to output delay (pad)
 parameter integer RAND_CYCLES = 1500;
@@ -158,6 +159,9 @@ task wait_ta(output integer clocks);
             n = n + 1;
             if (TAn === 1'b0) begin
                 if ($realtime - ta_last_change < 8.0) err("_TA setup violation at CPU");
+                fork begin : hold
+                    #(CPU_TA_HOLD) if (TAn !== 1'b0) err("_TA hold violation at CPU");
+                end join_none
                 clocks = n;
                 disable wait_ta;
             end
@@ -234,6 +238,9 @@ task cpu_line_read(input [31:0] a);
                 @(posedge BCLK);
                 if (TAn !== 1'b0) err("line read: _TA not asserted on consecutive clock");
                 if ($realtime - ta_last_change < 8.0 && TAn === 1'b0) err("_TA setup violation at CPU");
+                fork begin : hold2
+                    #(CPU_TA_HOLD) if (TAn !== 1'b0) err("_TA hold violation at CPU");
+                end join_none
             end else begin
                 wait_ta(n);
                 if (n != 2) err("line read: expected _TA every second clock");

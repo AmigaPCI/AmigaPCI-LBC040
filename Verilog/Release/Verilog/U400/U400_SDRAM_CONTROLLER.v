@@ -157,9 +157,22 @@ wire [8:0] BEAT_COL = {L_COL[8:2], L_COL[1:0] + BEAT};
 //We drive _TA from the start of our SDRAM cycle until it is finished. Outside
 //of that the pin is an input so we can see the MC68040 acknowledge a snooped
 //access itself.
+//
+//TA_OUT is set by the state machine on the CLK80 edge that coincides with the
+//bus clock edge. The pin is driven from a copy taken on the following falling
+//edge of CLK80, 6.25ns later. The MC68040 needs _TA to be valid until 2ns after
+//its clock edge and stable 8ns before it: launching from the falling edge gives
+//about 8ns of hold margin and still leaves about 13ns of setup at 40MHz, and
+//makes the hold time independent of the skew between the bus clock at the CPU
+//and CLK80 at this FPGA.
 reg TA_DRV;
 reg TA_OUT;
-assign TAn = TA_DRV ? TA_OUT : 1'bz;
+reg TA_PIN;
+always @(negedge CLK80) begin
+    if (!RESETn) TA_PIN <= 1'b1;
+    else         TA_PIN <= TA_OUT;
+end
+assign TAn = TA_DRV ? TA_PIN : 1'bz;
 
 assign TP = TA_DRV;
 
