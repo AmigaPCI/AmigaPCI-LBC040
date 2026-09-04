@@ -93,6 +93,16 @@ we drop the request without touching the SDRAM. This rule applies in every
 state, because the MC68040's _TA is a single clock and can arrive while we are
 refreshing. A new _TS while a request is pending replaces the request.
 
+ALTERNATE BUS MASTER LINE CYCLES
+--------------------------------
+Every SIZ = 11 cycle is answered with four long words, whoever the master is.
+U111 negates _TBI for fast RAM, so the MC68040 always expects that. The
+mainboard PCI bridge (U110) issues SIZ = 11 only for PCI cache line bursts
+(Memory Read Line, Memory Write and Invalidate) and does not look at _TBI, so
+it expects four beats as well. U400 has no _TBI input and cannot tell if the
+mainboard ever burst inhibits an alternate master; if that is ever needed, _TBI
+has to be brought to a spare pin and L_LINE gated with it.
+
 CYCLE TIMING (CLK40 periods from _TS to the last _TA sampled)
 ------------------------------------------------------------
                  FAST_READ = 1 (default)   FAST_READ = 0
