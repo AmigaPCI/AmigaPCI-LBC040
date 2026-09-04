@@ -26,7 +26,9 @@ Description: DATA TRANSFER CYCLE AND BUS SIZING STATE MACHINE
 
 Date          Who  Description
 -----------------------------------
-20-JUN-2026   JN   Rev 6.x hardware release.   
+20-JUN-2026   JN   Rev 6.x hardware release.
+02-SEP-2026   SR   Line transfers of on-board RAM (needs U400 with burst support).
+03-SEP-2026   JN   Cache jumper controls fast RAM only; ROM caching follows the mainboard.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
@@ -112,12 +114,20 @@ assign TACKn = !LBENn ? TAn : 1'bz;
 //assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
 assign TEA_CPUn = 1'b1;
 
-assign TBI_CPUn = !LBENn ? 1'b0 : TBIn; //No RAM burst.
-//assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
+//On-board RAM supports line (burst) transfers. The U400 SDRAM controller
+//terminates line transfers with four _TA assertions, so _TBI is never asserted
+//for fast RAM. Off-board cycles pass the mainboard's _TBI and _TCI through.
+assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
 
-//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn; //No RAM cache.
-assign TCI_CPUn = !CACHE_EN ? (!LBENn ? 1'b1 : TCIn) : 1'b0; //Use the jumper to control assertion of _TCI.
-//assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+//Caching of fast RAM is controlled by a test jumper for troubleshooting.
+//CACHE_EN is U111 pin 67 (the SPI configuration data line, pulled up). A jumper
+//across the GND and SDI pins of CN111 pulls it low and allows caching of fast
+//RAM. Fit the jumper only after the FPGA has configured, and remove it before
+//programming the card's FPGAs through the mainboard, which drives this line.
+//ROM and everything else off-board follow the mainboard's _TCI.
+//  LBENn = 0    : fast RAM address space
+//  CACHE_EN = 0 : caching of fast RAM allowed (jumper fitted)
+assign TCI_CPUn = !LBENn ? (!CACHE_EN ? 1'b1 : 1'b0) : TCIn;
 
 
 ///////////////////////
