@@ -297,6 +297,22 @@ task dma_cycle(input [31:0] a, input rw, input [31:0] d, input integer mode, inp
     end
 endtask
 
+// Off-board cycle (not RAM space) terminated by the mainboard after two clocks:
+// _TS in C1, _TA sampled at the end of C2. The mainboard drives _TA high for a
+// clock before releasing it, like U409 does.
+task offboard_cycle(input [31:0] a);
+    begin
+        cycles = cycles + 1;
+        @(posedge BCLK);
+        #(CPU_TCO) ADDR = a; SIZ = 2'b00; RnW = 1; TS_CPU = 0;
+        @(posedge BCLK);
+        #(CPU_TCO) TS_CPU = 1;
+        #(1) TA_CPU_DRV = 1;          // _TA asserted during C2
+        @(posedge BCLK);              // sampled here
+        #(FPGA_TCO) TA_CPU_DRV = 0;   // pulled up again
+    end
+endtask
+
 // ---------------------------------------------------------------- stimulus
 integer k, n, r;
 reg [31:0] a, d;
@@ -324,6 +340,16 @@ initial begin
     cpu_read(32'h0800_1001, 2'b01, 32'h1122_3344, 4'b0100);
     cpu_read(32'h0800_1002, 2'b10, 32'h1122_3344, 4'b0011);
     cpu_read(32'h0800_1003, 2'b01, 32'h1122_3344, 4'b0001);
+
+    // ---- a fast off-board cycle directly followed by a RAM cycle ----
+    // The tail of the off-board _TS must not start the RAM cycle early on a
+    // half-driven address.
+    ram_poke(32'h0800_1010, 32'h5566_7788);
+    offboard_cycle(32'h0400_0000);
+    cpu_read(32'h0800_1010, 2'b00, 32'h5566_7788, 4'hf);
+    if (ta_clocks != 4 + !FAST_READ && ta_clocks != 5 + !FAST_READ) err("RAM read after fast off-board cycle: latency");
+    offboard_cycle(32'h00F8_0000);
+    cpu_line_read(32'h0800_1010);
 
     // ---- single writes ----
     cpu_write(32'h0800_2000, 2'b00, 32'hA5A5_5A5A);

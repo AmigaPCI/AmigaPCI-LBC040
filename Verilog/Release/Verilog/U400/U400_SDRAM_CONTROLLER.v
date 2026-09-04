@@ -167,31 +167,41 @@ assign TP = TA_DRV;
 //These are sampled on the bus clock, exactly when the MC68040 expects them to
 //be sampled, and are consumed by the CLK80 state machine on odd edges only.
 reg TS_R;   //_TS was asserted at the last CLK40 edge.
+reg TS_R_D; //...and at the one before.
 reg MI_R;   //_MI was negated at the last CLK40 edge (memory may respond).
 reg TA_R;   //_TA was asserted at the last CLK40 edge (by someone else).
 always @(posedge CLK40) begin
     if (!RESETn) begin
-        TS_R <= 1'b0;
-        MI_R <= 1'b0;
-        TA_R <= 1'b0;
+        TS_R   <= 1'b0;
+        TS_R_D <= 1'b0;
+        MI_R   <= 1'b0;
+        TA_R   <= 1'b0;
     end else begin
-        TS_R <= ~TSn;
-        MI_R <= MIn;
-        TA_R <= ~TAn && !TA_DRV;
+        TS_R   <= ~TSn;
+        TS_R_D <= TS_R;
+        MI_R   <= MIn;
+        TA_R   <= ~TAn && !TA_DRV;
     end
 end
 
-//_TS can arrive at this FPGA late in the cycle (MC68040 output delay plus the
-//pass through in U111), so we also sample it on the odd CLK80 edge 12.5ns after
-//the bus edge. TS_S2 holds that sample when the state machine looks at it on
-//the following odd edge.
+//_TS is one clock wide but can still look asserted at the following bus clock
+//edge (MC68040 output hold plus the pass through in U111), so only the first
+//edge on which it is seen counts. That keeps the tail of one cycle's _TS from
+//starting a cycle on the address of the next one.
+wire TS_NEW = TS_R && !TS_R_D;
+
+//_TS can also arrive at this FPGA late in the cycle (MC68040 output delay plus
+//the pass through in U111), so we sample it again on the odd CLK80 edge 12.5ns
+//after the bus edge, together with the address decode as it stands at that
+//moment. TS_S2 holds that sample when the state machine looks at it on the
+//following odd edge.
 reg TS_S1, TS_S2;
 always @(posedge CLK80) begin
-    TS_S1 <= ~TSn;
+    TS_S1 <= ~TSn && RAM_SPACE;
     TS_S2 <= TS_S1;
 end
 
-wire TS_SEEN = (TS_R || TS_S2) && RAM_SPACE;
+wire TS_SEEN = (TS_NEW && RAM_SPACE) || TS_S2;
 
 ////////////////////////////
 // SDRAM COMMAND ENCODING //
