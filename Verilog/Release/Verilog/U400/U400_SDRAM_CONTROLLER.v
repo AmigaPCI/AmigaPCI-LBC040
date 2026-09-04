@@ -282,6 +282,7 @@ reg        SDRAM_CONFIGURED;
 reg        CONFIG_REFRESH_DONE;
 reg        REQ;            //A cycle request is waiting (refresh in progress or _MI asserted).
 reg        REQ_FRESH;      //The request was captured on the last odd edge.
+reg        ABORT;          //The cycle was started while _MI was asserted after all; back out.
 
 wire REFRESH_DUE = (REFRESH_COUNT > REFRESH_DEFAULT);
 
@@ -311,6 +312,7 @@ always @(posedge CLK80) begin
         TA_OUT     <= 1'b1;
         REQ        <= 1'b0;
         REQ_FRESH  <= 1'b0;
+        ABORT      <= 1'b0;
         BEAT       <= 2'b0;
         CNT        <= 5'b0;
         WAIT_CNT   <= 4'b0;
@@ -443,6 +445,7 @@ always @(posedge CLK80) begin
                     MA_OUT      <= (REQ && !REQ_RENEW) ? L_ROW : A[23:11];
                     BEAT        <= 2'b0;
                     CNT         <= 5'b0;
+                    ABORT       <= 1'b0;
                     TA_DRV      <= 1'b1;
                     TA_OUT      <= 1'b1;
                     SDRAM_STATE <= SDRAM_CYCLE;
@@ -454,7 +457,27 @@ always @(posedge CLK80) begin
             //activate registered on E3): CNT = n corresponds to edge E(4+n).
             //Even CLK40 edges are CNT = 2, 4, 6, ... (E6, E8, E10, ...).
             SDRAM_CYCLE : begin
-                if (L_RnW) begin
+                if (CNT == 5'd1 && !MI_R) begin
+                    //_MI was asserted after the bus clock edge on which we sampled it
+                    //together with _TS. The MC68040 asserts _MI from the last _TA of an
+                    //alternate bus master cycle, and when that master starts its next
+                    //cycle straight away the _TS is sampled before _MI has arrived.
+                    //Only the activate has been sent so far: back out and hold the
+                    //request until _MI is negated. Release _TA so the MC68040's own
+                    //acknowledge can be seen if it services the access itself.
+                    ABORT  <= 1'b1;
+                    REQ    <= 1'b1;
+                    TA_DRV <= 1'b0;
+                end else if (ABORT) begin
+                    //Close the row once tRAS is satisfied (activate sampled at CNT = 0).
+                    if (CNT == 5'd3) begin
+                        CS_EN       <= 1'b1;
+                        CMD_OUT     <= PRECHARGE;
+                        MA_OUT      <= 13'b0;
+                        WAIT_CNT    <= 4'd1; //tRP
+                        SDRAM_STATE <= SDRAM_DONE;
+                    end
+                end else if (L_RnW) begin
                     //READS: RD_PER_BEAT read commands per long word, each with
                     //the same column, so the SDRAM drives every long word for
                     //RD_PER_BEAT x 12.5ns. FAST_READ: beat k is on the bus from

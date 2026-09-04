@@ -109,12 +109,14 @@ always @(posedge BCLK) begin
     #(2*T80 - CPU_TSU) dq_setup_snap = DQ;
 end
 
-// Any SDRAM activity while _MI is asserted and the CPU did not start the cycle is an error.
+// Memory must not respond while _MI is asserted: no READ or WRITE command (data
+// on the bus) and no _TA. Activate, precharge and refresh are allowed; U400 may
+// open a row and close it again when _MI turns out to be asserted after all.
 reg mi_guard = 0;
 always @(posedge RAMCLK) begin
-    if (mi_guard && (CS0n_d === 1'b0 || CS1n_d === 1'b0) && {RASn_d, CASn_d, WEn_d} != 3'b111 && {RASn_d, CASn_d, WEn_d} != 3'b001)
-        err("SDRAM command issued while _MI asserted");
-    if (mi_guard && TP) err("U400 drives _TA while _MI asserted");
+    if (mi_guard && (CS0n_d === 1'b0 || CS1n_d === 1'b0) && ({RASn_d, CASn_d, WEn_d} == 3'b101 || {RASn_d, CASn_d, WEn_d} == 3'b100))
+        err("SDRAM READ/WRITE issued while _MI asserted");
+    if (mi_guard && TP && TA_DUT === 1'b0) err("U400 asserts _TA while _MI asserted");
 end
 
 // ---------------------------------------------------------------- 68040 bus master model
@@ -297,6 +299,43 @@ task dma_cycle(input [31:0] a, input rw, input [31:0] d, input integer mode, inp
     end
 endtask
 
+// Two alternate bus master cycles back to back with no idle clock. The MC68040
+// re-asserts _MI from the edge on which the first cycle's _TA was sampled, but
+// its output delay plus the level shifter (mi_delay) puts the assertion after
+// the next bus clock edge, on which the second _TS is already sampled. The
+// second access is snooped and _MI is negated snoop_clocks bus clocks after its
+// _TS (best case 2, up to 4 per the manual). Memory must stay quiet until then.
+task dma_back_to_back(input [31:0] a1, input [31:0] a2, input rw2, input [31:0] d2, input real mi_delay,
+                      input integer snoop_clocks, input [31:0] exp1, input [31:0] exp2);
+    integer c;
+    begin
+        cycles = cycles + 2;
+        @(posedge BCLK); @(posedge BCLK);
+        MIn = 0; mi_guard = 1;
+        @(posedge BCLK); @(posedge BCLK);
+        start_cycle(a1, 2'b00, 1, 0);
+        @(posedge BCLK); #(CPU_TCO) mi_guard = 0; MIn = 1;      // snoop inhibited
+        wait_ta(ta_clocks);
+        check_read_data(exp1, 4'hf);
+        // _TA was sampled on this edge. Second cycle starts now; _MI follows late.
+        fork
+            begin #(mi_delay) MIn = 0; mi_guard = 1; end
+        join_none
+        if (!rw2) begin
+            fork begin #(CPU_TDATA) DQ_OUT = d2; end join_none
+        end
+        #(CPU_TCO) ADDR = a2; SIZ = 2'b00; RnW = rw2; TS_CPU = 0;
+        @(posedge BCLK);
+        #(CPU_TCO) TS_CPU = 1;
+        for (c = 1; c < snoop_clocks; c = c + 1) @(posedge BCLK);
+        #(CPU_TCO) mi_guard = 0; MIn = 1;                       // snoop miss, memory may respond
+        wait_ta(ta_clocks);
+        if (rw2) check_read_data(exp2, 4'hf); else next_write_data(0, 1);
+        @(posedge BCLK); #(CPU_TCO) MIn = 1; mi_guard = 0;
+        @(posedge BCLK);
+    end
+endtask
+
 // Off-board cycle (not RAM space) terminated by the mainboard after two clocks:
 // _TS in C1, _TA sampled at the end of C2. The mainboard drives _TA high for a
 // clock before releasing it, like U409 does.
@@ -407,6 +446,17 @@ initial begin
     dma_cycle(32'h0800_7000, 1, 0, 2, 0);               // snoop hit on read: memory must stay quiet
     cpu_read(32'h0800_7000, 2'b00, 32'hD0D0_0000, 4'hf); // CPU resumes normally
     cpu_line_read(32'h0800_7000);
+
+    // ---- back to back alternate master cycles with a slow _MI ----
+    ram_poke(32'h0800_7030, 32'h7030_7030);
+    ram_poke(32'h0800_7034, 32'h7034_7034);
+    dma_back_to_back(32'h0800_7030, 32'h0800_7034, 1, 0, 28.0, 2, 32'h7030_7030, 32'h7034_7034);
+    $display("back to back DMA with late _MI: second _TA after %0d clocks", ta_clocks);
+    dma_back_to_back(32'h0800_7034, 32'h0800_7030, 1, 0, 34.0, 4, 32'h7034_7034, 32'h7030_7030);
+    dma_back_to_back(32'h0800_7030, 32'h0800_7038, 0, 32'h7038_7038, 30.0, 4, 32'h7030_7030, 0);
+    if (ram_peek(32'h0800_7038) !== 32'h7038_7038) err("back to back DMA write data");
+    dma_back_to_back(32'h0800_7030, 32'h0800_703C, 0, 32'h703C_703C, 20.0, 3, 32'h7030_7030, 0);
+    if (ram_peek(32'h0800_703C) !== 32'h703C_703C) err("back to back DMA write data");
 
     // ---- snoop hit while a refresh is in progress ----
     // The MC68040 acknowledges the alternate master itself with a one clock _TA
