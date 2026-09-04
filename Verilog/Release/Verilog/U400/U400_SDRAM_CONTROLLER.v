@@ -255,8 +255,11 @@ reg [2:0] CMD_OUT;
 reg [12:0] MA_OUT;
 
 assign CLK_EN = 1'b1; //Never suspend the SDRAM clock.
-assign BANK0  = L_BANK[0];
-assign BANK1  = L_BANK[1];
+//The bank address must be zero for LOAD MODE REGISTER, which like PRECHARGE
+//ALL and AUTO REFRESH selects both devices. L_BANK may hold a request that
+//arrived before configuration finished.
+assign BANK0  = CS_EN_ALL ? 1'b0 : L_BANK[0];
+assign BANK1  = CS_EN_ALL ? 1'b0 : L_BANK[1];
 assign CS1n   = ~((CS_EN &&  L_CS) || CS_EN_ALL);
 assign CS0n   = ~((CS_EN && !L_CS) || CS_EN_ALL);
 assign RASn   = CMD_OUT[2];
