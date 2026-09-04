@@ -495,8 +495,11 @@ initial begin
     ram_poke(32'h0800_8000, 32'h8000_8000);
     start_cycle(32'h0800_8010, 2'b11, 0, 32'h8010_0000);
     @(posedge BCLK); @(posedge BCLK);
-    RESETn = 0; TS_CPU = 1; DQ_OUT = 32'hz;
-    repeat (8) @(posedge BCLK);
+    RESETn = 0; TS_CPU = 1;
+    // The CPU keeps driving until it has recognised the reset; a write command
+    // already sent to the SDRAM completes with that data.
+    @(posedge BCLK); @(posedge BCLK); DQ_OUT = 32'hz;
+    repeat (6) @(posedge BCLK);
     RESETn = 1;
     d = $realtime;
     #1000;

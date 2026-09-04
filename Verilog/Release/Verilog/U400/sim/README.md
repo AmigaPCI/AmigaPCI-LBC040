@@ -29,4 +29,7 @@ or `-P tb_u400.CPU_TCO=25`. Keep `CLK40_SKEW` above -2.4 (the testbench models
 skew as a positive delay on top of a 2.5 ns base). `run_sweep.sh` runs a grid of CPU output delays and
 clock skews; `FAST_READ=0 ./run_sweep.sh` does the same for the slower, higher
 margin read schedule. Results of the last sweeps are in `sweep_fast.txt` and
-`sweep_safe.txt`.
+`sweep_safe.txt`. The grid deliberately includes 4 ns of combined adverse clock
+skew (`CLK40_SKEW=-2.0` with `RAMCLK_SKEW=2.0`), which is beyond the 3 ns the
+fast read schedule is designed for: those `FAST_READ=1` runs fail on read data
+setup and `FAST_READ=0` passes them.
