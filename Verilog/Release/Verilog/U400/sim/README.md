@@ -3,9 +3,18 @@
 `tb_u400.v` drives `U400_TOP` with an MC68040 bus master model (long word, byte,
 word and line transfers using the 40 MHz output delays from the MC68040 user's
 manual), an alternate bus master with `_MI` snooping, and two behavioural ISSI
-IS42S32160F SDRAMs (`sdram_model.v`) that check tRCD, tRP, tRAS, tRC, tRFC,
-tMRD, auto precharge rules, and data setup/hold. Read data is checked at the CPU
-sampling edge with the 3 ns setup / 3 ns hold the MC68040 needs at 40 MHz.
+IS42S32160F SDRAMs (`sdram_model.v`, -7 speed grade) that check tRCD, tRP,
+tRAS min and max, tRC, tRFC, tMRD, the mode register bank address, auto
+precharge rules, and data setup/hold. Read data is checked at the CPU sampling
+edge with the 3 ns setup / 3 ns hold the MC68040 needs at 40 MHz, `_TA` with
+the 8 ns setup and 2 ns hold.
+
+Besides plain and line transfers the testbench covers: a request during the
+power up delay, an off-board cycle directly followed by a RAM cycle, alternate
+bus master cycles with `_MI` (snoop inhibited, snoop lookup, snoop hit), back to
+back alternate master cycles with a late `_MI`, a snoop hit landing during a
+refresh (swept across the refresh window), a warm reset in the middle of a line
+write, and random traffic across several refresh periods.
 
 Requires Icarus Verilog (`brew install icarus-verilog`).
 
@@ -16,7 +25,8 @@ Requires Icarus Verilog (`brew install icarus-verilog`).
 
 Parameters can be overridden on the command line, for example
 `-P tb_u400.FAST_READ=0`, `-P tb_u400.CLK40_SKEW=-1.5`, `-P tb_u400.RAMCLK_SKEW=2.0`
-or `-P tb_u400.CPU_TCO=25`. `run_sweep.sh` runs a grid of CPU output delays and
+or `-P tb_u400.CPU_TCO=25`. Keep `CLK40_SKEW` above -2.4 (the testbench models
+skew as a positive delay on top of a 2.5 ns base). `run_sweep.sh` runs a grid of CPU output delays and
 clock skews; `FAST_READ=0 ./run_sweep.sh` does the same for the slower, higher
 margin read schedule. Results of the last sweeps are in `sweep_fast.txt` and
 `sweep_safe.txt`.

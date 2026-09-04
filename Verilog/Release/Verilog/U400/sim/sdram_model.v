@@ -10,11 +10,12 @@
 module sdram_model #(
     parameter NAME  = "SDRAM",
     parameter tCK   = 12.5,
-    parameter tRCD  = 18.0,   // -7 grade numbers
-    parameter tRP   = 18.0,
+    parameter tRCD  = 20.0,   // IS42S32160F-7 numbers
+    parameter tRP   = 20.0,
     parameter tRAS  = 42.0,
-    parameter tRC   = 60.0,
-    parameter tRFC  = 66.0,
+    parameter tRAS_MAX = 100000.0,
+    parameter tRC   = 63.0,
+    parameter tRFC  = 63.0,
     parameter tWR   = 2,      // clocks
     parameter tMRD  = 2,      // clocks
     parameter tAC   = 6.0,    // clock to output valid (CL2)
@@ -206,6 +207,7 @@ always @(posedge CLK) begin
 
             CMD_LMR : begin
                 for (k = 0; k < 4; k = k + 1) if (bank_open[k] || $realtime < bank_ready[k]) err("LOAD MODE with active bank");
+                if (BA !== 2'b00) err("LOAD MODE with non zero bank address (reserved)");
                 cas_latency = A[6:4];
                 burst_len   = (A[2:0] == 0) ? 1 : (1 << A[2:0]);
                 if (A[3]) err("interleaved burst not modelled");
@@ -219,6 +221,19 @@ always @(posedge CLK) begin
             CMD_NOP : ;
             default : err("illegal command");
         endcase
+    end
+end
+
+// A row may not stay open longer than tRAS max.
+reg tras_max_flagged [0:3];
+initial for (i = 0; i < 4; i = i + 1) tras_max_flagged[i] = 0;
+always @(posedge CLK) begin
+    for (k = 0; k < 4; k = k + 1) begin
+        if (bank_open[k] && !tras_max_flagged[k] && $realtime - bank_act_time[k] > tRAS_MAX) begin
+            tras_max_flagged[k] = 1;
+            err("row open longer than tRAS max");
+        end
+        if (!bank_open[k]) tras_max_flagged[k] = 0;
     end
 end
 
