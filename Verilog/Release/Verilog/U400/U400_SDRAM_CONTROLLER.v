@@ -69,10 +69,13 @@ SNOOPING / MEMORY INHIBIT
 -------------------------
 _MI is asserted by the MC68040 between and during alternate bus master cycles
 until it has decided whether it must intervene. Memory must not respond while
-_MI is asserted. When a cycle is requested and _MI is asserted we wait. If _MI
-is negated we run the cycle normally. If _TA is asserted while _MI is still
-asserted, the MC68040 is servicing the access from its cache and we drop the
-request without touching the SDRAM.
+_MI is asserted. When a cycle is requested and _MI is asserted we hold the
+request and wait. If _MI is negated we run the cycle normally. If _TA is
+asserted by somebody else while a request is pending, the MC68040 has serviced
+the access from its cache (or the cycle ended some other way we cannot see) and
+we drop the request without touching the SDRAM. This rule applies in every
+state, because the MC68040's _TA is a single clock and can arrive while we are
+refreshing. A new _TS while a request is pending replaces the request.
 
 CYCLE TIMING (CLK40 periods from _TS to the last _TA sampled)
 ------------------------------------------------------------
@@ -235,7 +238,6 @@ localparam [3:0] CONFIG_END   = 4'h4;
 localparam [3:0] REFRESH_STRT = 4'h5;
 localparam [3:0] REFRESH_WAIT = 4'h6;
 localparam [3:0] SDRAM_IDLE   = 4'h7;
-localparam [3:0] SNOOP_WAIT   = 4'h8;
 localparam [3:0] SDRAM_CYCLE  = 4'h9;
 localparam [3:0] SDRAM_DONE   = 4'ha;
 
@@ -279,8 +281,20 @@ reg [13:0] POWERUP_COUNT;
 reg        SDRAM_CONFIGURED;
 reg        CONFIG_REFRESH_DONE;
 reg        REQ;            //A cycle request is waiting (refresh in progress or _MI asserted).
+reg        REQ_FRESH;      //The request was captured on the last odd edge.
 
 wire REFRESH_DUE = (REFRESH_COUNT > REFRESH_DEFAULT);
+
+//A _TA we did not drive while a request is pending means the cycle we were
+//asked for has been terminated by somebody else (the MC68040 as a snoop slave,
+//or a bus error), so the request is void. The MC68040 cannot respond earlier
+//than two clocks after _TS, so a _TA seen on the edge the request was captured
+//or the one after belongs to the previous bus cycle and is ignored.
+wire REQ_CANCEL = REQ && !REQ_FRESH && TA_R;
+
+//A new _TS while a request is pending means the pending cycle is over and a
+//new one has started. The request is taken again from the current address.
+wire REQ_RENEW  = REQ && !REQ_FRESH && TS_NEW && RAM_SPACE;
 
 //Read schedule. Commands run from CNT = 2 to RD_LAST, the cycle ends at RD_DONE.
 wire [4:0] RD_LAST = FAST_READ ? (L_LINE ? 5'd9  : 5'd3) : (L_LINE ? 5'd17 : 5'd5);
@@ -296,6 +310,7 @@ always @(posedge CLK80) begin
         TA_DRV     <= 1'b0;
         TA_OUT     <= 1'b1;
         REQ        <= 1'b0;
+        REQ_FRESH  <= 1'b0;
         BEAT       <= 2'b0;
         CNT        <= 5'b0;
         WAIT_CNT   <= 4'b0;
@@ -321,22 +336,30 @@ always @(posedge CLK80) begin
         REFRESH_COUNT <= REFRESH_COUNT + 1;
         CNT <= CNT + 1;
 
-        //--- Cycle request capture. ---
-        //A request is remembered while we are busy with a refresh or waiting for
-        //_MI. Requests are only looked at on odd edges, so the CLK40 registered
-        //inputs are stable. Nothing is captured during our own cycle because _TS
-        //may still look asserted on the edge after the one we already used.
-        if (!EVEN && TS_SEEN && !REQ && (SDRAM_STATE != SDRAM_IDLE) &&
-            (SDRAM_STATE != SNOOP_WAIT) && (SDRAM_STATE != SDRAM_CYCLE)) begin
-            REQ    <= 1'b1;
-            L_CS   <= A[26];
-            L_BANK <= A[25:24];
-            L_ROW  <= A[23:11];
-            L_COL  <= A[10:2];
-            L_A10  <= A[1:0];
-            L_SIZ  <= SIZ;
-            L_RnW  <= RnW;
-            L_LINE <= (SIZ == 2'b11);
+        //--- Bus events. Looked at on odd edges only, so the CLK40 registered inputs are stable. ---
+        if (!EVEN) begin
+            REQ_FRESH <= 1'b0;
+
+            //Somebody else terminated the cycle we hold a request for.
+            if (REQ_CANCEL) REQ <= 1'b0;
+
+            //Capture a request while we are busy with something other than our own
+            //cycle, or replace a pending request when a new _TS arrives. In IDLE
+            //the same edge may start the cycle right away, which clears REQ again.
+            //Nothing is captured during our own cycle because _TS may still look
+            //asserted on the edge after the one we already used.
+            if (TS_SEEN && (!REQ || REQ_RENEW) && (SDRAM_STATE != SDRAM_CYCLE)) begin
+                REQ       <= 1'b1;
+                REQ_FRESH <= 1'b1;
+                L_CS      <= A[26];
+                L_BANK    <= A[25:24];
+                L_ROW     <= A[23:11];
+                L_COL     <= A[10:2];
+                L_A10     <= A[1:0];
+                L_SIZ     <= SIZ;
+                L_RnW     <= RnW;
+                L_LINE    <= (SIZ == 2'b11);
+            end
         end
 
         case (SDRAM_STATE)
@@ -405,70 +428,24 @@ always @(posedge CLK80) begin
             end
 
             //--- Idle. Cycles start on odd edges only. ---
+            //A pending request whose cycle the MC68040 is still snooping (_MI
+            //asserted) waits here; refresh is not held up by it.
             SDRAM_IDLE : begin
-                if (REFRESH_DUE && !REQ) begin
+                if (REFRESH_DUE && (!REQ || (!EVEN && !MI_R))) begin
                     SDRAM_STATE <= REFRESH_STRT;
-                    //Do not lose a request that arrives on this edge.
-                    if (!EVEN && TS_SEEN) begin
-                        REQ    <= 1'b1;
-                        L_CS   <= A[26];
-                        L_BANK <= A[25:24];
-                        L_ROW  <= A[23:11];
-                        L_COL  <= A[10:2];
-                        L_A10  <= A[1:0];
-                        L_SIZ  <= SIZ;
-                        L_RnW  <= RnW;
-                        L_LINE <= (SIZ == 2'b11);
-                    end
-                end else if (!EVEN && (REQ || TS_SEEN)) begin
-                    if (!REQ) begin
-                        //Latch the cycle information right now.
-                        L_CS   <= A[26];
-                        L_BANK <= A[25:24];
-                        L_ROW  <= A[23:11];
-                        L_COL  <= A[10:2];
-                        L_A10  <= A[1:0];
-                        L_SIZ  <= SIZ;
-                        L_RnW  <= RnW;
-                        L_LINE <= (SIZ == 2'b11);
-                    end
-                    if (MI_R) begin
-                        //Memory may respond. Activate the row now.
-                        REQ         <= 1'b0;
-                        CS_EN       <= 1'b1;
-                        CMD_OUT     <= BANKACTIVATE;
-                        MA_OUT      <= REQ ? L_ROW : A[23:11];
-                        BEAT        <= 2'b0;
-                        CNT         <= 5'b0;
-                        TA_DRV      <= 1'b1;
-                        TA_OUT      <= 1'b1;
-                        SDRAM_STATE <= SDRAM_CYCLE;
-                    end else begin
-                        //The MC68040 is snooping this alternate bus master access.
-                        REQ         <= 1'b1;
-                        SDRAM_STATE <= SNOOP_WAIT;
-                    end
-                end
-            end
-
-            //--- Wait for the MC68040 to negate _MI, or to service the access itself. ---
-            SNOOP_WAIT : begin
-                if (!EVEN) begin
-                    if (MI_R) begin
-                        REQ         <= 1'b0;
-                        CS_EN       <= 1'b1;
-                        CMD_OUT     <= BANKACTIVATE;
-                        MA_OUT      <= L_ROW;
-                        BEAT        <= 2'b0;
-                        CNT         <= 5'b0;
-                        TA_DRV      <= 1'b1;
-                        TA_OUT      <= 1'b1;
-                        SDRAM_STATE <= SDRAM_CYCLE;
-                    end else if (TA_R) begin
-                        //Snoop hit. The MC68040 supplied or sank the data. Memory stays quiet.
-                        REQ         <= 1'b0;
-                        SDRAM_STATE <= SDRAM_IDLE;
-                    end
+                end else if (!EVEN && !REQ_CANCEL && (REQ || TS_SEEN) && MI_R) begin
+                    //Memory may respond. Activate the row now. The request capture
+                    //above latches the cycle information for a new _TS on this
+                    //same edge, so the row comes straight from the address bus.
+                    REQ         <= 1'b0;
+                    CS_EN       <= 1'b1;
+                    CMD_OUT     <= BANKACTIVATE;
+                    MA_OUT      <= (REQ && !REQ_RENEW) ? L_ROW : A[23:11];
+                    BEAT        <= 2'b0;
+                    CNT         <= 5'b0;
+                    TA_DRV      <= 1'b1;
+                    TA_OUT      <= 1'b1;
+                    SDRAM_STATE <= SDRAM_CYCLE;
                 end
             end
 

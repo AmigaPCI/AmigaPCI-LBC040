@@ -408,6 +408,26 @@ initial begin
     cpu_read(32'h0800_7000, 2'b00, 32'hD0D0_0000, 4'hf); // CPU resumes normally
     cpu_line_read(32'h0800_7000);
 
+    // ---- snoop hit while a refresh is in progress ----
+    // The MC68040 acknowledges the alternate master itself with a one clock _TA
+    // that can arrive while U400 is refreshing. The request must be dropped and
+    // must not run later against the CPU's next cycle. Sweep the refresh start
+    // across the DMA cycle.
+    ram_poke(32'h0800_7010, 32'h7010_7010);
+    ram_poke(32'h0800_7020, 32'h7020_7020);
+    for (k = 0; k < 40; k = k + 1) begin
+        dut.U400_SDRAM_CONTROLLER.REFRESH_COUNT = dut.U400_SDRAM_CONTROLLER.REFRESH_DEFAULT - k;
+        dma_cycle(32'h0800_7010, (k & 1), 32'hBAD0_0000 + k, 2, 0);
+        if (dut.U400_SDRAM_CONTROLLER.REQ) err("request still pending after snoop hit");
+        cpu_read(32'h0800_7020, 2'b00, 32'h7020_7020, 4'hf);
+        //A refresh may legitimately delay this read by up to four clocks; an early _TA would be the stale request.
+        if (ta_clocks < 4 + !FAST_READ || ta_clocks > 9 + !FAST_READ) begin
+            $display("   _TA after %0d clocks", ta_clocks);
+            err("read after snoop hit: latency");
+        end
+        if (ram_peek(32'h0800_7010) !== 32'h7010_7010) err("memory changed by a snooped write");
+    end
+
     // ---- random traffic long enough to hit several refresh cycles (7.5us each) ----
     for (k = 0; k < 4096; k = k + 1) shadow[k] = 32'h0;
     for (k = 0; k < 4096; k = k + 1) ram_poke(32'h0900_0000 + k*4, 0);
