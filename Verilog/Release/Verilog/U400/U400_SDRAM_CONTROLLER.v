@@ -28,6 +28,10 @@ Revision History:
     22-JUN-2026 : Initial Rev 6.x Release
     02-SEP-2026 : Line (burst) transfers, memory inhibit (_MI) support for
                   snooped alternate bus master cycles, refresh/precharge guards.
+    03-SEP-2026 : Review fixes: pending requests are dropped when another
+                  device terminates the cycle, _MI is checked again after the
+                  activate, warm reset precharges at once, _TA launched from
+                  the falling CLK80 edge, refresh margin, bank address for MRS.
 
 CLOCKING
 --------
@@ -41,7 +45,19 @@ edge (the sample point is 6.25ns away from every CLK40 transition).
 
 Bus inputs are registered on CLK40 (TS_R, MI_R, TA_R) and are only consumed on
 odd edges, 12.5ns later, so no data is ever taken across the coincident edge.
+The same rule holds in the other direction: TA_DRV, which the CLK40 domain
+reads, only changes on odd edges (cycles start on odd edges and end in
+SDRAM_DONE, entered on an even edge, so the clear lands on the next odd edge;
+RD_DONE and the write end counts must stay even for this reason).
 SDRAM commands are registered on CLK80 and sampled by the SDRAM one edge later.
+
+The phase detector samples the CLK40 pin as data on the falling edge of CLK80.
+Its margin is the 6.25ns between that edge and the CLK40 transitions, less the
+skew between the two clock pins and the difference between the CLK40 pad to
+flop route and the CLK80 global clock insertion. Nothing in the timing flow
+checks this path (U400_TOP.sdc), so keep the CLK40 and CLK80 traces from U111
+matched. If the sample lands on the wrong side, EVEN is inverted and every
+cycle is mistimed, which would show up immediately as a non-booting board.
 
 READ DATA TIMING
 ----------------
@@ -84,7 +100,10 @@ Long word read : 5 (unchanged)             6
 Line read      : 8  (was ~20 burst inhib.) 12
 Long word write: 4 (unchanged)             4
 Line write     : 10 (was ~16 burst inhib.) 10
-One more clock when _TS reaches U400 after the CLK40 edge ending C1.
+One more clock when _TS reaches U400 after the CLK40 edge ending C1, and up to
+four more when a refresh is in progress. Alternate bus master cycles that are
+snooped take the MC68040's _MI decision time on top (2 to 4 clocks), plus about
+three clocks when _MI arrived after the cycle had already been started.
 
 Simulation (sim/tb_u400.v, ISSI -7 timing, MC68040 40MHz input specs) passes
 FAST_READ = 1 with up to 3ns of combined adverse skew between the CPU clock and
@@ -571,7 +590,9 @@ always @(posedge CLK80) begin
                 end
             end
 
-            default : SDRAM_STATE <= SDRAM_IDLE;
+            //Unreachable. Recover through the (short, warm) configuration sequence
+            //so the SDRAM state is known again.
+            default : SDRAM_STATE <= POWER_UP;
         endcase
     end
 end
