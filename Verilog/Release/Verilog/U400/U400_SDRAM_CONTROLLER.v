@@ -78,8 +78,9 @@ edge, so the SDRAM captures the data one CLK80 (12.5ns) before the CPU samples
 _TA, while the CPU is still driving it. During line writes the MC68040 can take
 up to 27ns after each _TA to present the next long word, which is more than one
 CLK40 period. Line writes therefore run at one long word every two CLK40
-periods with _TA pulsed every other clock. This is what caused the rare nibble
-corruption in burst writes on the Rev 5 controller.
+periods with _TA pulsed every other clock (FAST_WRITE = 1), or every third
+clock (FAST_WRITE = 0), which gives the SDRAM 34ns instead of 9ns of data setup
+after the MC68040's specified output delay.
 
 SNOOPING / MEMORY INHIBIT
 -------------------------
@@ -109,7 +110,8 @@ CYCLE TIMING (CLK40 periods from _TS to the last _TA sampled)
 Long word read : 5 (unchanged)             6
 Line read      : 8  (was ~20 burst inhib.) 12
 Long word write: 4 (unchanged)             4
-Line write     : 10 (was ~16 burst inhib.) 10
+Line write     : 13 (FAST_WRITE = 0, default), 10 with FAST_WRITE = 1
+                    (was ~16 burst inhibited)
 One more clock when _TS reaches U400 after the CLK40 edge ending C1, and up to
 four more when a refresh is in progress. Alternate bus master cycles that are
 snooped take the MC68040's _MI decision time on top (2 to 4 clocks), plus about
@@ -129,7 +131,15 @@ module U400_SDRAM_CONTROLLER #(
     //FAST_READ = 0: two CLK40 per long word, 6 clock long word reads. Read data
     //becomes valid about 19ns before the CPU samples it. Use this if cached RAM
     //is unstable on a particular board.
-    parameter FAST_READ = 1
+    parameter FAST_READ = 1,
+    //FAST_WRITE = 1: one long word every two bus clocks during line writes
+    //(10 clock line writes). The SDRAM samples each long word about 9ns after
+    //the MC68040 is guaranteed to have driven it, which is the thinnest margin
+    //in this design and depends on the loading of the CPU data bus.
+    //FAST_WRITE = 0: one long word every three bus clocks (13 clock line writes)
+    //with about 34ns of data setup. Use this unless line writes are proven
+    //reliable on the board.
+    parameter FAST_WRITE = 0
 )(
     input CLK80, CLK40, RESETn, TSn, RAM_SPACE, RnW, MIn,
     input [26:0] A,
@@ -358,6 +368,17 @@ wire REQ_RENEW  = REQ && !REQ_FRESH && TS_NEW && RAM_SPACE;
 wire [4:0] RD_LAST = FAST_READ ? (L_LINE ? 5'd9  : 5'd3) : (L_LINE ? 5'd17 : 5'd5);
 wire [4:0] RD_DONE = FAST_READ ? (L_LINE ? 5'd12 : 5'd6) : (L_LINE ? 5'd20 : 5'd8);
 
+//Write schedule. The first long word is written at CNT = 2. The MC68040 drives
+//the next long word up to 27ns after the bus clock edge on which it samples
+//_TA, so the following write commands are spaced WR_STEP CLK80 edges apart:
+//4 (two bus clocks, about 9ns of data setup at the SDRAM) with FAST_WRITE, or
+//6 (three bus clocks, about 34ns) otherwise.
+localparam [4:0] WR_STEP  = FAST_WRITE ? 5'd4 : 5'd6;
+localparam [4:0] WR_BEAT1 = 5'd2 + WR_STEP;
+localparam [4:0] WR_BEAT2 = 5'd2 + 2*WR_STEP;
+localparam [4:0] WR_LAST  = 5'd2 + 3*WR_STEP;
+localparam [4:0] WR_DONE  = WR_LAST + 5'd2;
+
 always @(posedge CLK80) begin
     if (!RESETn) begin
         CS_EN      <= 1'b0;
@@ -571,18 +592,18 @@ always @(posedge CLK80) begin
                     //12.5ns before the CPU sees the acknowledge. Line writes take
                     //two CLK40 per long word so the CPU has time to drive the
                     //next long word (up to 27ns after _TA).
-                    if (CNT == 5'd2 || (L_LINE && (CNT == 5'd6 || CNT == 5'd10 || CNT == 5'd14))) begin
+                    if (CNT == 5'd2 || (L_LINE && (CNT == WR_BEAT1 || CNT == WR_BEAT2 || CNT == WR_LAST))) begin
                         CS_EN   <= 1'b1;
                         CMD_OUT <= WRITE;
                         DQ_EN   <= 1'b1;
-                        MA_OUT  <= {2'b00, (L_LINE ? (CNT == 5'd14) : 1'b1), 1'b0, BEAT_COL};
+                        MA_OUT  <= {2'b00, (L_LINE ? (CNT == WR_LAST) : 1'b1), 1'b0, BEAT_COL};
                         BEAT    <= BEAT + 1;
                         TA_OUT  <= 1'b0;
                     end
-                    if (CNT == 5'd4 || CNT == 5'd8 || CNT == 5'd12 || CNT == 5'd16) begin
+                    if (CNT == 5'd4 || CNT == WR_BEAT1 + 5'd2 || CNT == WR_BEAT2 + 5'd2 || CNT == WR_LAST + 5'd2) begin
                         TA_OUT <= 1'b1;
                     end
-                    if (CNT == (L_LINE ? 5'd16 : 5'd4)) begin
+                    if (CNT == (L_LINE ? WR_DONE : 5'd4)) begin
                         DQ_EN       <= 1'b0;
                         WAIT_CNT    <= 4'd1; //tWR + tRP complete before the next activate can be issued.
                         SDRAM_STATE <= SDRAM_DONE;

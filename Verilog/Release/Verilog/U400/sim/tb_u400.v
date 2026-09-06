@@ -27,6 +27,7 @@ parameter real U111_DELAY = 6.0;   // _TS pass through delay in U111
 parameter real FPGA_TCO   = 5.0;   // U400 clock to output delay (pad)
 parameter integer RAND_CYCLES = 1500;
 parameter integer FAST_READ = 1;
+parameter integer FAST_WRITE = 0;
 
 // ---------------------------------------------------------------- clocks
 // All clocks are delayed copies of CLK80_SRC so that skews of either sign are positive delays.
@@ -72,7 +73,7 @@ wire [12:0] MA_d;
 assign #(FPGA_TCO) {UUBEn_d, UMBEn_d, LMBEn_d, LLBEn_d, CS0n_d, CS1n_d, RASn_d, CASn_d, WEn_d, BANK0_d, BANK1_d, MA_d} =
                    {UUBEn, UMBEn, LMBEn, LLBEn, CS0n, CS1n, RASn, CASn, WEn, BANK0, BANK1, MA};
 
-U400_TOP #(.FAST_READ(FAST_READ)) dut (
+U400_TOP #(.FAST_READ(FAST_READ), .FAST_WRITE(FAST_WRITE)) dut (
     .CLK80(CLK80), .CLK40(CLK40), .RESETn(RESETn),
     .TSn(TSn_RAM), .RnW(RnW), .MIn(MIn), .A(ADDR), .SIZ(SIZ),
     .TAn(TA_DUT),
