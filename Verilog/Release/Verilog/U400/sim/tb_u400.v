@@ -134,18 +134,32 @@ task ram_poke(input [31:0] a, input [31:0] d);
     if (a[26]) ram1.poke(a[25:24], a[23:11], a[10:2], d); else ram0.poke(a[25:24], a[23:11], a[10:2], d);
 endtask
 
-// Start a bus cycle right after a BCLK rising edge.
+// Every BCLK edge on which _TA is sampled asserted. The MC68040 starts its
+// next cycle on that same edge (C1 follows the last clock of the previous
+// cycle with no idle clock), so start_cycle uses it when called right after
+// a transfer.
+real ta_edge_time = -1000;
+always @(posedge BCLK) if (TAn === 1'b0) ta_edge_time = $realtime;
+
+// Start a bus cycle. C1 begins on the edge where the previous cycle's last
+// _TA was sampled when we are called within that clock, else on the next
+// BCLK edge. Address, size and _TS are driven CPU_TCO after the C1 edge;
+// write data is driven CPU_TDATA after the C2 edge, as the MC68040 does.
 task start_cycle(input [31:0] a, input [1:0] s, input rw, input [31:0] wdata);
     begin
+        if ($realtime - ta_edge_time < T80 && $realtime - ta_edge_time >= 0) begin
+            #(ta_edge_time + CPU_TCO - $realtime);
+        end else begin
+            @(posedge BCLK);
+            #(CPU_TCO);
+        end
+        ADDR = a; SIZ = s; RnW = rw; TS_CPU = 0;
         @(posedge BCLK);
         if (!rw) begin
             fork
                 begin #(CPU_TDATA) DQ_OUT = wdata; end
             join_none
         end
-        #(CPU_TCO);
-        ADDR = a; SIZ = s; RnW = rw; TS_CPU = 0;
-        @(posedge BCLK);
         #(CPU_TCO) TS_CPU = 1;
     end
 endtask
@@ -248,8 +262,9 @@ task cpu_line_read(input [31:0] a);
             end
             check_read_data(ram_peek(wa), 4'hf);
         end
-        @(posedge BCLK);
-        if (TAn === 1'b0) err("line read: _TA asserted after fourth beat");
+        fork
+            begin @(posedge BCLK); if (TAn === 1'b0) err("line read: _TA asserted after fourth beat"); end
+        join_none
     end
 endtask
 
@@ -264,8 +279,9 @@ task cpu_line_write(input [31:0] a, input [31:0] d0, d1, d2, d3);
             if (k == 0) wait_ta(ta_clocks); else wait_ta(n);
             if (k < 3) next_write_data(dv[k+1], 0); else next_write_data(0, 1);
         end
-        @(posedge BCLK);
-        if (TAn === 1'b0) err("line write: _TA asserted after fourth beat");
+        fork
+            begin @(posedge BCLK); if (TAn === 1'b0) err("line write: _TA asserted after fourth beat"); end
+        join_none
         for (k = 0; k < 4; k = k + 1) begin
             wa = {a[31:4], a[3:2] + k[1:0], 2'b00};
             if (ram_peek(wa) !== dv[k]) begin
