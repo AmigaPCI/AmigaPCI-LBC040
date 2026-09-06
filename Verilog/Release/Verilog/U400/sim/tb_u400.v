@@ -461,6 +461,22 @@ initial begin
         cpu_read(32'h0800_6000 + k*4, 2'b00, ~k, 4'hf);
     end
 
+    // ---- copyback write miss with the fill cache inhibited: the MC68040 does a line read of the
+    //      target line and then writes the long word through, back to back and to the same row,
+    //      once per long word. This is what a movem into cache inhibited fast RAM produces under
+    //      68040.library. ----
+    for (k = 0; k < 48; k = k + 1) begin
+        a = 32'h0800_A000 + k*16;
+        for (n = 0; n < 4; n = n + 1) begin
+            cpu_line_read(a);
+            cpu_write(a + n*4, 2'b00, 32'hC0DE_0000 + k*16 + n*4);
+        end
+        for (n = 0; n < 4; n = n + 1)
+            if (ram_peek(a + n*4) !== 32'hC0DE_0000 + k*16 + n*4) err("fill then write-through data mismatch");
+        cpu_line_read(a);
+    end
+    $display("%0t fill-then-write-through sequence done", $realtime);
+
     // ---- alternate bus master cycles with _MI ----
     ram_poke(32'h0800_7000, 32'hD0D0_0000);
     dma_cycle(32'h0800_7000, 1, 0, 0, 32'hD0D0_0000);

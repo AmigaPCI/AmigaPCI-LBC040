@@ -45,10 +45,11 @@ edge (the sample point is 6.25ns away from every CLK40 transition).
 
 Bus inputs are registered on CLK40 (TS_R, MI_R, TA_R) and are only consumed on
 odd edges, 12.5ns later, so no data is ever taken across the coincident edge.
-The same rule holds in the other direction: TA_DRV, which the CLK40 domain
-reads, only changes on odd edges (cycles start on odd edges and end in
+The same rule holds in the other direction: TA_DRV and TA_OUT, which the CLK40
+domain reads, only change on odd edges (cycles start on odd edges and end in
 SDRAM_DONE, entered on an even edge, so the clear lands on the next odd edge;
-RD_DONE and the write end counts must stay even for this reason).
+RD_DONE and the write end counts must stay even for this reason, and every
+TA_OUT assignment sits on an odd CNT).
 SDRAM commands are registered on CLK80 and sampled by the SDRAM one edge later.
 
 The phase detector samples the CLK40 pin as data on the falling edge of CLK80.
@@ -197,21 +198,18 @@ wire [8:0] BEAT_COL = {L_COL[8:2], L_COL[1:0] + BEAT};
 //of that the pin is an input so we can see the MC68040 acknowledge a snooped
 //access itself.
 //
-//TA_OUT is set by the state machine on the CLK80 edge that coincides with the
-//bus clock edge. The pin is driven from a copy taken on the following falling
-//edge of CLK80, 6.25ns later. The MC68040 needs _TA to be valid until 2ns after
-//its clock edge and stable 8ns before it: launching from the falling edge gives
-//about 8ns of hold margin and still leaves about 13ns of setup at 40MHz, and
-//makes the hold time independent of the skew between the bus clock at the CPU
-//and CLK80 at this FPGA.
+//TA_OUT is set by the state machine on the odd CLK80 edge, 12.5ns before the
+//bus clock edge on which the pin has to change. TA_Q, clocked by the bus clock,
+//moves it to the pin, so _TA changes one clock-to-pad delay after the bus clock
+//edge: the MC68040 gets 25ns minus that delay of setup at its next edge (it
+//needs 8ns) and the delay itself as hold at the current edge (it needs 2ns).
+//This is how the Rev 6.0 controller launched _TACK and it keeps the _TA timing
+//independent of the skew between the bus clock at the CPU and CLK80 here.
+//Launching from the falling CLK80 edge instead would cost 6.25ns of setup.
 reg TA_DRV;
 reg TA_OUT;
-reg TA_PIN;
-always @(negedge CLK80) begin
-    if (!RESETn) TA_PIN <= 1'b1;
-    else         TA_PIN <= TA_OUT;
-end
-assign TAn = TA_DRV ? TA_PIN : 1'bz;
+reg TA_Q;
+assign TAn = TA_DRV ? TA_Q : 1'bz;
 
 assign TP = TA_DRV;
 
@@ -231,11 +229,13 @@ always @(posedge CLK40) begin
         TS_R_D <= 1'b0;
         MI_R   <= 1'b0;
         TA_R   <= 1'b0;
+        TA_Q   <= 1'b1;
     end else begin
         TS_R   <= ~TSn;
         TS_R_D <= TS_R;
         MI_R   <= MIn;
         TA_R   <= ~TAn && !TA_DRV;
+        TA_Q   <= TA_OUT;
     end
 end
 
@@ -574,14 +574,16 @@ always @(posedge CLK80) begin
                         //Advance after the last command of each beat.
                         if (FAST_READ ? CNT[0] : (CNT[1:0] == 2'b01)) BEAT <= BEAT + 1;
                     end
+                    //_TA changes are decided on odd edges, one CLK80 before the bus
+                    //clock edge on which TA_Q puts them on the pin.
                     if (FAST_READ) begin
-                        if (CNT == 5'd4) TA_OUT <= 1'b0;
+                        if (CNT == 5'd3)           TA_OUT <= 1'b0;
+                        if (CNT == RD_DONE - 5'd1) TA_OUT <= 1'b1;
                     end else begin
-                        if (CNT[1:0] == 2'b10 && CNT >= 5'd6 && CNT < RD_DONE) TA_OUT <= 1'b0;
-                        if (CNT[1:0] == 2'b00 && CNT >= 5'd8) TA_OUT <= 1'b1;
+                        if (CNT[1:0] == 2'b01 && CNT >= 5'd5 && CNT < RD_DONE - 5'd1) TA_OUT <= 1'b0;
+                        if (CNT[1:0] == 2'b11 && CNT >= 5'd7) TA_OUT <= 1'b1;
                     end
                     if (CNT == RD_DONE) begin
-                        TA_OUT      <= 1'b1;
                         DQ_EN       <= 1'b0;
                         WAIT_CNT    <= 4'd1; //Precharge is complete before the next activate can be issued.
                         SDRAM_STATE <= SDRAM_DONE;
@@ -598,9 +600,13 @@ always @(posedge CLK80) begin
                         DQ_EN   <= 1'b1;
                         MA_OUT  <= {2'b00, (L_LINE ? (CNT == WR_LAST) : 1'b1), 1'b0, BEAT_COL};
                         BEAT    <= BEAT + 1;
-                        TA_OUT  <= 1'b0;
                     end
-                    if (CNT == 5'd4 || CNT == WR_BEAT1 + 5'd2 || CNT == WR_BEAT2 + 5'd2 || CNT == WR_LAST + 5'd2) begin
+                    //_TA for each beat: asserted on the pin with the write command's
+                    //bus clock edge, negated with the next one (odd edge decisions).
+                    if (CNT == 5'd1 || (L_LINE && (CNT == WR_BEAT1 - 5'd1 || CNT == WR_BEAT2 - 5'd1 || CNT == WR_LAST - 5'd1))) begin
+                        TA_OUT <= 1'b0;
+                    end
+                    if (CNT == 5'd3 || CNT == WR_BEAT1 + 5'd1 || CNT == WR_BEAT2 + 5'd1 || CNT == WR_LAST + 5'd1) begin
                         TA_OUT <= 1'b1;
                     end
                     if (CNT == (L_LINE ? WR_DONE : 5'd4)) begin
