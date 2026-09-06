@@ -242,21 +242,22 @@ end
 //_TS is one clock wide but can still look asserted at the following bus clock
 //edge (MC68040 output hold plus the pass through in U111), so only the first
 //edge on which it is seen counts. That keeps the tail of one cycle's _TS from
-//starting a cycle on the address of the next one.
+//starting a cycle on the address of the next one. A _TS that reaches this FPGA
+//after the bus clock edge that ends C1 (a slow MC68040 output plus U111) is
+//still asserted at the next bus clock edge and is seen there, one clock later.
+//
+//_TS is only ever sampled on the bus clock edge. It must not be sampled on the
+//odd CLK80 edge 12.5ns after the CPU starts a cycle: _TS gets here through a
+//mux in U111 while the address takes the longer way through this FPGA's decode,
+//so on that edge a new _TS can pair with the previous cycle's RAM_SPACE. That
+//started SDRAM cycles, and drove _TA, for off-board accesses that followed a
+//RAM access.
 wire TS_NEW = TS_R && !TS_R_D;
 
-//_TS can also arrive at this FPGA late in the cycle (MC68040 output delay plus
-//the pass through in U111), so we sample it again on the odd CLK80 edge 12.5ns
-//after the bus edge, together with the address decode as it stands at that
-//moment. TS_S2 holds that sample when the state machine looks at it on the
-//following odd edge.
-reg TS_S1, TS_S2;
-always @(posedge CLK80) begin
-    TS_S1 <= ~TSn && RAM_SPACE;
-    TS_S2 <= TS_S1;
-end
-
-wire TS_SEEN = (TS_NEW && RAM_SPACE) || TS_S2;
+//RAM_SPACE is looked at on the odd edge after the bus clock edge that sampled
+//_TS, 37.5ns after the CPU started driving the address, so the decode has
+//settled (MC68040 address valid within 25ns plus the decode here).
+wire TS_SEEN = TS_NEW && RAM_SPACE;
 
 ////////////////////////////
 // SDRAM COMMAND ENCODING //
