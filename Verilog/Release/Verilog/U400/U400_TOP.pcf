@@ -11,7 +11,7 @@ set_io TSn      62
 set_io TAn      54
 set_io LBENn    53
 set_io RnW      51
-#set_io MIn      56
+set_io MIn      56
 
 #SDRAM SIGNALS
 set_io CS1n     60

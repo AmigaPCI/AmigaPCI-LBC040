@@ -26,7 +26,10 @@ Description: DATA TRANSFER CYCLE AND BUS SIZING STATE MACHINE
 
 Date          Who  Description
 -----------------------------------
-20-JUN-2026   JN   Rev 6.x hardware release.   
+20-JUN-2026   JN   Rev 6.x hardware release.
+02-SEP-2026   SR   Line transfers of on-board RAM (needs U400 with burst support).
+03-SEP-2026   JN   Cache jumper controls fast RAM only; ROM caching follows the mainboard.
+07-SEP-2026   SR   Stretch the mainboard's _TACK towards the CPU by one clock.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
@@ -107,17 +110,43 @@ assign TSn_RAM =  CPU_BUS ? TSn_CPU : TSn; //Drive the LBC RAM cycle. If this is
 //WE PASS THE _TACK SIGNAL TO _TA FOR OFF-BOARD CYCLES.
 //WE PASS THE _TA SIGNAL TO _TACK FOR ON-BOARD CYCLES.
 
-assign TAn = !TA_DIS && LBENn ? TACKn : 1'bz;
+//The mainboard terminates its cycles with a single bus clock pulse on _TACK,
+//registered on the mainboard's copy of the bus clock. By the time that pulse
+//has crossed the connector and the combinational path through this FPGA it
+//reaches the CPU some 15 to 19ns after the clock edge, against the 25ns it has
+//before the MC68040 samples it with 8ns of setup (spec 22a at 40MHz). A pulse
+//that arrives a nanosecond too late is gone again at the next edge, and a
+//missed acknowledge is a hang. Extend the pulse towards the CPU with a copy
+//taken one clock later: a pulse the CPU catches costs nothing, since a 68040
+//does not sample _TA during C1 of its next cycle, and a pulse it misses is
+//still there at the following edge with a full clock of setup. Not while an
+//alternate bus master owns the bus, so the snooping CPU keeps counting one
+//acknowledge per transfer.
+reg TACK_STRETCH;
+always @(posedge CLK40) begin
+    if (!RESETn) TACK_STRETCH <= 1'b1;
+    else         TACK_STRETCH <= TACKn;
+end
+
+assign TAn = !TA_DIS && LBENn ? (TACKn & (TACK_STRETCH | ~CPU_BUS)) : 1'bz;
 assign TACKn = !LBENn ? TAn : 1'bz;
 //assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
 assign TEA_CPUn = 1'b1;
 
-assign TBI_CPUn = !LBENn ? 1'b0 : TBIn; //No RAM burst.
-//assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
+//On-board RAM supports line (burst) transfers. The U400 SDRAM controller
+//terminates line transfers with four _TA assertions, so _TBI is never asserted
+//for fast RAM. Off-board cycles pass the mainboard's _TBI and _TCI through.
+assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
 
-//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn; //No RAM cache.
-assign TCI_CPUn = !CACHE_EN ? (!LBENn ? 1'b1 : TCIn) : 1'b0; //Use the jumper to control assertion of _TCI.
-//assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+//Caching of fast RAM is controlled by a test jumper for troubleshooting.
+//CACHE_EN is U111 pin 67 (the SPI configuration data line, pulled up). A jumper
+//across the GND and SDI pins of CN111 pulls it low and allows caching of fast
+//RAM. Fit the jumper only after the FPGA has configured, and remove it before
+//programming the card's FPGAs through the mainboard, which drives this line.
+//ROM and everything else off-board follow the mainboard's _TCI.
+//  LBENn = 0    : fast RAM address space
+//  CACHE_EN = 0 : caching of fast RAM allowed (jumper fitted)
+assign TCI_CPUn = !LBENn ? (!CACHE_EN ? 1'b1 : 1'b0) : TCIn;
 
 
 ///////////////////////
