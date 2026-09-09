@@ -26,7 +26,11 @@ Description: DATA TRANSFER CYCLE AND BUS SIZING STATE MACHINE
 
 Date          Who  Description
 -----------------------------------
-20-JUN-2026   JN   Rev 6.x hardware release.   
+20-JUN-2026   JN   Rev 6.x hardware release.
+02-SEP-2026   SR   Line transfers of on-board RAM (needs U400 with burst support).
+03-SEP-2026   JN   Cache jumper controls fast RAM only; ROM caching follows the mainboard.
+07-SEP-2026   SR   Registers declared ahead of first use (Icarus Verilog needs it for the testbench).
+08-SEP-2026   SR   _TACK caught on either clock edge; _TA held one clock for a late CPU, parked high before release.
 
 GitHub: https://github.com/jasonsbeer/AmigaPCI
 */
@@ -60,6 +64,24 @@ module U111_CYCLE_SM (
 //assign TP0 = TSn_DMA_EDGE[0];
 //assign TP0 = (OFFBOARD_EN || ONBOARD_EN);
 
+//State machine registers, declared first because the transfer start, cycle
+//termination and data path logic below refer to them.
+reg TS_EN;
+reg TA_DIS;
+reg LATCH_EN;
+reg PORT_MISMATCH;
+reg READ_CYCLE_ACTIVE;
+reg WRITE_CYCLE_ACTIVE;
+reg FLIP_WORD;
+reg A2_EN;
+reg BURST;
+reg LW_TRANS;
+
+reg [3:0] CYCLE_STATE;
+reg [7:0] UU_LATCHED;
+reg [7:0] UM_LATCHED;
+reg [1:0] BURST_COUNT;
+
 /////////////////////
 // TRANSFER START //
 ///////////////////
@@ -84,6 +106,21 @@ always @(posedge CLK40) begin
     
 end
 
+//The mainboard's _TACK is a single clock pulse and may land anywhere against
+//our clock. Sample it on both edges and turn the first sight of it into one
+//event, so the cycle state machine can never miss it or count it twice.
+reg TACK_NEG, TACK_LOW_D;
+always @(negedge CLK40) begin
+    if (!RESETn) TACK_NEG <= 1'b1;
+    else         TACK_NEG <= TACKn;
+end
+wire TACK_LOW = !TACKn || !TACK_NEG;
+always @(posedge CLK40) begin
+    if (!RESETn) TACK_LOW_D <= 1'b0;
+    else         TACK_LOW_D <= TACK_LOW;
+end
+wire TACK_EVT = TACK_LOW && !TACK_LOW_D;
+
 reg TSn_OUT;
 //reg TSn_CPU_OUT;
 always @(negedge CLK40) begin
@@ -100,6 +137,7 @@ assign TSn = CPU_BUS_OWN ? TSn_OUT : 1'bz;
 //assign TSn_CPU = !CPU_BUS_OWN ? TSn_CPU_OUT : 1'bz; //May need to put this back for snooping.
 assign TSn_RAM =  CPU_BUS ? TSn_CPU : TSn; //Drive the LBC RAM cycle. If this isn't adequately edge aligned, may need to delay a clock.
 
+
 ////////////////////////
 // CYCLE TERMINATION //
 //////////////////////
@@ -107,17 +145,42 @@ assign TSn_RAM =  CPU_BUS ? TSn_CPU : TSn; //Drive the LBC RAM cycle. If this is
 //WE PASS THE _TACK SIGNAL TO _TA FOR OFF-BOARD CYCLES.
 //WE PASS THE _TA SIGNAL TO _TACK FOR ON-BOARD CYCLES.
 
-assign TAn = !TA_DIS && LBENn ? TACKn : 1'bz;
+//The card's _TA net has no pull-up. Never let go of it while it could be
+//low: after an off-board cycle, drive it high for one more clock before
+//releasing it to the RAM controller, which drives it itself from then on.
+reg TA_PARK;
+always @(posedge CLK40) begin
+    if (!RESETn) TA_PARK <= 1'b0;
+    else         TA_PARK <= (!TA_DIS && LBENn);
+end
+//A rising edge acknowledge from the mainboard reaches the CPU some 15 to 20ns
+//after the clock edge, against the 17ns it has for the MC68040's 8ns setup at
+//the next edge. Hold _TA low for one more clock after an acknowledge that
+//terminates a cycle we are passing through, so a pulse the CPU could not use
+//at one edge is still there at the next. Only for acknowledges that end our
+//own off-board cycle: not for the first half of a split cycle, not for
+//acknowledges of on-board cycles that travel over _TACK as well, and not
+//while an alternate master owns the bus.
+reg TACK_STRETCH;  //see below, after the state encoding
+assign TAn = !TA_DIS && LBENn ? (TACKn & TACK_STRETCH) : (TA_PARK ? 1'b1 : 1'bz);
 assign TACKn = !LBENn ? TAn : 1'bz;
 //assign TEA_CPUn = !TA_DIS ? TEAn : 1'b1;
 assign TEA_CPUn = 1'b1;
 
-assign TBI_CPUn = !LBENn ? 1'b0 : TBIn; //No RAM burst.
-//assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
+//On-board RAM supports line (burst) transfers. The U400 SDRAM controller
+//terminates line transfers with four _TA assertions, so _TBI is never asserted
+//for fast RAM. Off-board cycles pass the mainboard's _TBI and _TCI through.
+assign TBI_CPUn = !LBENn ? 1'b1 : TBIn;
 
-//assign TCI_CPUn = !LBENn ? 1'b0 : TCIn; //No RAM cache.
-assign TCI_CPUn = !CACHE_EN ? (!LBENn ? 1'b1 : TCIn) : 1'b0; //Use the jumper to control assertion of _TCI.
-//assign TCI_CPUn = !LBENn ? 1'b1 : TCIn;
+//Caching of fast RAM is controlled by a test jumper for troubleshooting.
+//CACHE_EN is U111 pin 67 (the SPI configuration data line, pulled up). A jumper
+//across the GND and SDI pins of CN111 pulls it low and allows caching of fast
+//RAM. Fit the jumper only after the FPGA has configured, and remove it before
+//programming the card's FPGAs through the mainboard, which drives this line.
+//ROM and everything else off-board follow the mainboard's _TCI.
+//  LBENn = 0    : fast RAM address space
+//  CACHE_EN = 0 : caching of fast RAM allowed (jumper fitted)
+assign TCI_CPUn = !LBENn ? (!CACHE_EN ? 1'b1 : 1'b0) : TCIn;
 
 
 ///////////////////////
@@ -181,21 +244,13 @@ localparam [3:0] CYCLE1_TERM = 4'h2;
 localparam [3:0] CYCLE2_STRT = 4'h3;
 localparam [3:0] CYCLE2_TERM = 4'h4;
 
-reg TS_EN;
-reg TA_DIS;
-reg LATCH_EN;
-reg PORT_MISMATCH;
-reg READ_CYCLE_ACTIVE;
-reg WRITE_CYCLE_ACTIVE;
-reg FLIP_WORD;
-reg A2_EN;
-reg BURST;
-reg LW_TRANS;
+always @(posedge CLK40) begin
+    if (!RESETn) TACK_STRETCH <= 1'b1;
+    else         TACK_STRETCH <= !(TACK_EVT && !TA_DIS && LBENn && CPU_BUS &&
+                                   (CYCLE_STATE == CYCLE1_TERM || CYCLE_STATE == CYCLE2_TERM));
+end
 
-reg [3:0] CYCLE_STATE;
-reg [7:0] UU_LATCHED;
-reg [7:0] UM_LATCHED;
-reg [1:0] BURST_COUNT;
+
 
 always @(posedge CLK40) begin
     if (!RESETn) begin
@@ -245,7 +300,7 @@ always @(posedge CLK40) begin
                 CYCLE_STATE <= CYCLE1_TERM;
             end
             CYCLE1_TERM : begin
-                if (!TACKn) begin
+                if (TACK_EVT) begin
                     if (PORT_MISMATCH) begin
                         UU_LATCHED  <= UU_AMIGA_IN;
                         UM_LATCHED  <= UM_AMIGA_IN;
@@ -270,7 +325,7 @@ always @(posedge CLK40) begin
             end
             CYCLE2_TERM : begin
                 TS_EN <= 1'b0;
-                if (!TACKn) begin
+                if (TACK_EVT) begin
                     CYCLE_STATE <= IDLE;
                 end
             end
